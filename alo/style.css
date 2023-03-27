@@ -1,0 +1,14 @@
+header {
+  padding: 10px;
+}
+
+h1 {
+  color: #007bff;
+  font-size: 3rem;
+  text-align: center;
+}
+
+footer {
+  color: #6c757d;
+  font-size: 0.8rem;
+}
