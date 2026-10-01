@@ -9,10 +9,13 @@ export const RENDER_KINDS = [
   'phone-pro',
   'laptop',
   'desktop',
+  'compact',
   'tablet',
   'watch',
   'earbuds',
-  'accessory',
+  'case',
+  'puck',
+  'stylus',
 ] as const;
 export type RenderKind = (typeof RENDER_KINDS)[number];
 

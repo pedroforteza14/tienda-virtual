@@ -54,7 +54,7 @@ Operationalised as six checks. Any **No** is a bug, not a taste difference.
 | --- | --- | --- |
 | 1 | Is the ground colour unmistakably not Apple's? | `#0B0B0C` ink and `#F2EDE4` **warm bone** — a paper white with a yellow bias. Apple's light surfaces are cool (`#F5F5F7`, blue-biased). Side by side the difference is immediate. |
 | 2 | Is the type voice different? | **Archivo** (grotesque with a *width* axis, set extremely tight and stretched) + **Instrument Serif italic** for editorial counterpoint + **JetBrains Mono** for every number. Apple has no serif, no mono, and no width axis. |
-| 3 | Is the accent not Apple blue? | **Brass `#B58A4A`**. Warm, metallic, singular. Used for exactly three things: the aperture ring, the primary CTA, and focus. |
+| 3 | Is the accent not Apple blue? | **Brass `#B58A4A`** at 6.28 : 1 on ink. Warm, metallic, singular. Used for exactly three things: the aperture ring, the primary CTA, and focus. |
 | 4 | Is there a graphic device Apple would never use? | The **Ledger** — a visible hairline column grid with monospace coordinate markers in the margin, and **Spec Rails** — numbered `01 / DISPLAY` rules. That is draughtsmanship, which Apple hides. |
 | 5 | Is the composition off-centre? | Apple centres almost everything. Our hero is a left-weighted editorial stack against a right-weighted object, on an asymmetric 12-column ledger. |
 | 6 | Recognisable with the logo removed? | Yes — by the brass aperture, the bone-on-ink warmth, the margin coordinates, and mono prices. |
@@ -115,7 +115,7 @@ Warmth is the whole argument. Every neutral is pulled toward yellow; nothing is 
 | `--graphite` | `#1C1C1E` | Hairlines and dividers on ink. |
 | `--signal-ok` | `#5E8C6A` | In stock. Muted sage, never a bright green. |
 | `--signal-low` | `#C9873F` | Low stock. |
-| `--signal-err` | `#A8443A` | Errors. Oxide red, never pure `#f00`. |
+| `--signal-err` | `#D06A5A` | Errors. Warm oxide, never pure `#f00`. (`#A8443A` was the first pick; it measured 3.33 : 1 and failed AA.) |
 
 Discipline: **brass is 2–4 % of any viewport.** It is a metal, not a colour field. Gradients are
 allowed only as the hero vignette and the specular sweep on a device render — never on a button,

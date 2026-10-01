@@ -17,18 +17,29 @@ See `docs/creative-direction.md` §4 for the palette and the rationale. Mechanic
 - The light surface (`/legal`, checkout confirmation) flips the semantic layer, not the components.
 
 ### Contrast — measured, not assumed
+Computed with the WCAG 2.1 relative-luminance formula, not estimated. The script is in
+`tests/unit/tokens.test.ts`, which **fails the build** if a palette edit drops a pair below its
+threshold — so this table cannot silently rot.
+
 | Pair | Ratio | Verdict |
 | --- | --- | --- |
-| `--bone` on `--ink` | **15.9 : 1** | AAA |
-| `--bone-dim` on `--ink` | **7.6 : 1** | AAA body, AAA large |
-| `--bone-faint` on `--ink` | **3.9 : 1** | Non-text / disabled only — never body copy |
-| `--brass` on `--ink` | **6.4 : 1** | AA text, AAA large |
-| `--ink` on `--brass` | **5.3 : 1** | AA — the primary CTA |
-| `--signal-ok` on `--ink` | **5.1 : 1** | AA |
-| `--signal-err` on `--ink` | **4.6 : 1** | AA |
+| `--bone` on `--ink` | **16.87 : 1** | AAA |
+| `--bone-dim` on `--ink` | **7.78 : 1** | AAA |
+| `--bone-dim` on `--ink-raised` | **7.28 : 1** | AAA — drawer and menu copy |
+| `--bone-faint` on `--ink` | **3.50 : 1** | Non-text only — never body copy |
+| `--brass` on `--ink` | **6.28 : 1** | AA text, AAA large |
+| `--ink` on `--brass` | **6.28 : 1** | AA — the primary CTA |
+| `--signal-ok` on `--ink` | **5.09 : 1** | AA |
+| `--signal-low` on `--ink` | **6.58 : 1** | AA |
+| `--signal-err` on `--ink` | **5.52 : 1** | AA |
 
-`--bone-faint` is the one token that cannot carry text. It is used for hairline coordinates and
-disabled affordances, both of which are duplicated in an accessible way.
+Two notes on how this table shaped the palette rather than just describing it:
+
+- The first error red chosen (`#A8443A`) measured **3.33 : 1** and was rejected. `--signal-err` is
+  now `#D06A5A`; the deeper oxide survives as `--signal-err-deep` for borders and fills, where no
+  text sits on it.
+- `--bone-faint` is the one token that cannot carry text. It is used for the ledger coordinates and
+  disabled affordances, and in both cases the information is also conveyed another way.
 
 ---
 

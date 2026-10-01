@@ -214,7 +214,7 @@ export const categories: readonly Category[] = Object.freeze([
     name: 'Accesorios',
     display: 'The rest of the kit',
     blurb: 'Fundas, carga y Pencil. Lo que completa el equipo.',
-    render: 'accessory',
+    render: 'case',
   },
 ]);
 
@@ -557,7 +557,7 @@ export const products: readonly Product[] = Object.freeze([
     summary:
       'Un cubo de 12,7 cm de lado con chip M4 y puertos adelante. Traé tu monitor, tu teclado ' +
       'y listo: es el Mac más barato que existe.',
-    render: 'desktop',
+    render: 'compact',
     colors: SILVER_ONLY,
     storages: ['256 GB', '512 GB', '1 TB'],
     sizes: [],
@@ -1021,7 +1021,7 @@ export const products: readonly Product[] = Object.freeze([
     summary:
       'Silicona con interior de microfibra y MagSafe integrado. Protege sin esconder las ' +
       'líneas del teléfono.',
-    render: 'accessory',
+    render: 'case',
     colors: CASE_COLORS,
     storages: [],
     sizes: [],
@@ -1060,7 +1060,7 @@ export const products: readonly Product[] = Object.freeze([
     summary:
       'Carga magnética de 25 W con cable trenzado de un metro. Se apoya el teléfono y carga, ' +
       'sin buscar el conector.',
-    render: 'accessory',
+    render: 'puck',
     colors: WHITE_ONLY,
     storages: [],
     sizes: [],
@@ -1099,7 +1099,7 @@ export const products: readonly Product[] = Object.freeze([
     summary:
       'Sensor de presión, giro por rotación, gesto de apretar y respuesta háptica. Convierte ' +
       'al iPad en una herramienta de trabajo real.',
-    render: 'accessory',
+    render: 'stylus',
     colors: WHITE_ONLY,
     storages: [],
     sizes: [],

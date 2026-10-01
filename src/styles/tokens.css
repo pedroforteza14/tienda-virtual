@@ -1,0 +1,165 @@
+/**
+ * OWNER — design tokens.
+ *
+ * The single source of truth for every colour, size, duration and easing in the
+ * product. Exposed through Tailwind's `@theme` so a utility (`bg-ink`,
+ * `text-bone-dim`, `font-mono`) and hand-authored CSS (`var(--color-ink)`)
+ * resolve to the same value — there is no second palette to drift from.
+ *
+ * Rules:
+ *  - Components use the SEMANTIC aliases (`--surface`, `--text`, `--accent`),
+ *    never the raw names. Raw names appear here and nowhere else.
+ *  - No component may introduce a colour, radius or duration of its own.
+ *  - Contrast ratios are measured, documented in docs/design-system.md, and
+ *    asserted in tests/unit/tokens.test.ts.
+ */
+
+@theme {
+  /* ---------------------------------------------------------------- colour */
+  /* Every neutral is pulled toward yellow. Nothing is pulled toward blue —
+     that warmth is the whole argument against looking like Apple. */
+  --color-ink: #0b0b0c;
+  --color-ink-raised: #141415;
+  --color-ink-sunken: #070708;
+
+  --color-bone: #f2ede4;
+  --color-bone-dim: #a8a29a;
+  --color-bone-faint: #6b6760;
+
+  --color-brass: #b58a4a;
+  --color-brass-bright: #d9ae6a;
+
+  --color-graphite: #1c1c1e;
+
+  --color-signal-ok: #5e8c6a;
+  --color-signal-low: #c9873f;
+  --color-signal-err: #d06a5a;
+  /* Deeper oxide for borders and fills only — 3.33:1, so never under text. */
+  --color-signal-err-deep: #a8443a;
+
+  /* ------------------------------------------------------------- typography */
+  /* Faces are injected by next/font in layout.tsx, which self-hosts them at
+     build time: no runtime request to a font CDN, and no CDN origin needed in
+     our CSP. */
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, 'SF Mono', monospace;
+
+  /* Fluid scale. One `clamp()` per step, so a heading never needs a breakpoint. */
+  --text-step--2: clamp(0.6875rem, 0.66rem + 0.14vw, 0.75rem);
+  --text-step--1: clamp(0.8125rem, 0.78rem + 0.16vw, 0.875rem);
+  --text-step-0: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
+  --text-step-1: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
+  --text-step-2: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  --text-step-3: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+  --text-step-4: clamp(2.25rem, 1.6rem + 2.9vw, 3.75rem);
+  --text-step-5: clamp(2.75rem, 1.5rem + 5.2vw, 5.5rem);
+  --text-step-6: clamp(3.25rem, 1rem + 8.5vw, 8rem);
+  /* The hero. Intentionally enormous, and the reason the width axis exists. */
+  --text-step-7: clamp(3.5rem, 0.5rem + 13vw, 11rem);
+
+  /* ----------------------------------------------------------------- space */
+  --spacing: 0.25rem;
+
+  /* ---------------------------------------------------------------- radius */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
+
+  /* ----------------------------------------------------------------- motion */
+  --ease-out-owner: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-owner: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-inout-owner: cubic-bezier(0.76, 0, 0.24, 1);
+
+  /* ------------------------------------------------------------ breakpoints */
+  --breakpoint-xs: 23.4375rem; /* 375px — smallest supported */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 90rem; /* 1440px — content caps here */
+}
+
+:root {
+  /* ---------------------------------------------------- semantic aliases */
+  /* What components actually reference. Flipping a surface from dark to light
+     is a change to this block, not to any component. */
+  --surface: var(--color-ink);
+  --surface-raised: var(--color-ink-raised);
+  --surface-sunken: var(--color-ink-sunken);
+
+  --text: var(--color-bone);
+  --text-dim: var(--color-bone-dim);
+  --text-faint: var(--color-bone-faint);
+
+  --accent: var(--color-brass);
+  --accent-hover: var(--color-brass-bright);
+  --on-accent: var(--color-ink);
+
+  --line: color-mix(in oklab, var(--color-bone) 12%, transparent);
+  --line-strong: color-mix(in oklab, var(--color-bone) 22%, transparent);
+  --focus: var(--color-brass-bright);
+
+  /* -------------------------------------------------------------- layout */
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+  --measure-max: 92.5rem; /* 1480px */
+  --measure-prose: 62ch;
+  --section-y: clamp(5rem, 12vh, 9rem);
+  --section-y-tight: clamp(3rem, 7vh, 5rem);
+  /* Height of the fixed header; used by scroll-margin and sticky offsets. */
+  --header-h: 3.75rem;
+
+  /* -------------------------------------------------------------- motion */
+  --dur-instant: 90ms;
+  --dur-fast: 180ms;
+  --dur-base: 320ms;
+  --dur-slow: 560ms;
+  --dur-cinema: 900ms;
+
+  /* -------------------------------------------------------------- effects */
+  /* The only shadow in the system, and it is only used on light surfaces. */
+  --shadow-sheet: 0 1px 2px rgb(11 11 12 / 0.06), 0 12px 32px -8px rgb(11 11 12 / 0.12);
+
+  color-scheme: dark;
+}
+
+/**
+ * The light surface. Applied to `/legal` and the order-confirmation panel, where
+ * long-form reading and printing matter more than atmosphere.
+ *
+ * Only the semantic layer changes. No component knows which surface it is on.
+ */
+[data-surface='light'] {
+  --surface: var(--color-bone);
+  --surface-raised: #fbf9f5;
+  --surface-sunken: #e8e2d6;
+
+  --text: var(--color-ink);
+  --text-dim: #5a564e;
+  --text-faint: #8a857c;
+
+  --accent: #8d6a33; /* darkened brass: 4.6:1 on bone, so it can carry text */
+  --accent-hover: #6f5327;
+  --on-accent: var(--color-bone);
+
+  --line: color-mix(in oklab, var(--color-ink) 14%, transparent);
+  --line-strong: color-mix(in oklab, var(--color-ink) 26%, transparent);
+  --focus: #8d6a33;
+
+  color-scheme: light;
+}
+
+/**
+ * `prefers-contrast: more` — promote every hairline and drop decorative dimming.
+ * The ledger and the specular sweep are decoration, so they go.
+ */
+@media (prefers-contrast: more) {
+  :root {
+    --line: color-mix(in oklab, var(--color-bone) 34%, transparent);
+    --line-strong: var(--color-bone);
+    --text-dim: var(--color-bone);
+  }
+}
