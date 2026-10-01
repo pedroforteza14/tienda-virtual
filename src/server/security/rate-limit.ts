@@ -111,10 +111,28 @@ export function clearFailures(key: string): void {
   failures.delete(key);
 }
 
-/** Test-only. */
+/**
+ * Test-only helpers.
+ *
+ * Deliberately **two** functions. The request limiter and the per-account failure
+ * counter are different controls defending against different things, and a single
+ * reset that clears both made it impossible to write the test that matters: "an
+ * attacker rotates IP addresses (resetting the request limiter) — does the account
+ * lockout still stop them?" With one combined reset, that test silently cleared the
+ * very counter it was meant to exercise and passed for the wrong reason.
+ */
 export function resetRateLimits(): void {
   store.clear();
+}
+
+export function resetLoginFailures(): void {
   failures.clear();
+}
+
+/** Both, for a test's `beforeEach`. */
+export function resetSecurityCounters(): void {
+  resetRateLimits();
+  resetLoginFailures();
 }
 
 /**

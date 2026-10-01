@@ -141,6 +141,7 @@ function normaliseLines(lines: readonly CartLineInput[]): {
 } {
   const notices: string[] = [];
   const merged = new Map<string, number>();
+  let cappedAtLineLimit = false;
 
   for (const line of lines) {
     // Defence in depth: the schema already rejects these, but `priceCart` is
@@ -149,7 +150,16 @@ function normaliseLines(lines: readonly CartLineInput[]): {
     if (!Number.isInteger(line.qty) || line.qty < 1) continue;
 
     const current = merged.get(line.sku) ?? 0;
-    merged.set(line.sku, Math.min(current + line.qty, MAX_QTY_PER_LINE));
+    const requested = current + line.qty;
+    const capped = Math.min(requested, MAX_QTY_PER_LINE);
+    // Reducing 55 units to 5 without saying so leaves the customer wondering what
+    // happened. Both clamps — this one and the stock clamp below — are reported.
+    if (capped < requested) cappedAtLineLimit = true;
+    merged.set(line.sku, capped);
+  }
+
+  if (cappedAtLineLimit) {
+    notices.push(`El máximo es ${MAX_QTY_PER_LINE} unidades por producto.`);
   }
 
   const normalised = [...merged.entries()].map(([sku, qty]) => ({ sku, qty }));

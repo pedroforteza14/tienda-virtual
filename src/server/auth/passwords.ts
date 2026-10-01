@@ -138,6 +138,19 @@ export async function verifyPassword(
   return { valid, needsRehash: valid && parsed.params.N < target.N };
 }
 
-/** A hash to compare against when the account does not exist, so the login path
- *  does the same work either way. */
-export const DUMMY_HASH_PROMISE: Promise<string> = hashPassword('owner-store-nonexistent-account');
+/**
+ * A hash to compare against when the account does not exist, so the login path
+ * does the same work either way.
+ *
+ * Lazy and memoised, deliberately. As a module-level `const` this ran during
+ * Next's build-time page-data collection, which calls `env()` with
+ * `NODE_ENV=production` and no `SESSION_SECRET` present — and so failed the build.
+ * A module must not read configuration as a side effect of being imported; that is
+ * a deployment hazard well beyond this one symptom.
+ */
+let dummyHash: Promise<string> | null = null;
+
+export function dummyHashPromise(): Promise<string> {
+  dummyHash ??= hashPassword('owner-store-nonexistent-account');
+  return dummyHash;
+}

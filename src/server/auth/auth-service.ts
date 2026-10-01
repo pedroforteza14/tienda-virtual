@@ -1,6 +1,6 @@
 import { LOGIN_LOCKOUT_SECONDS, LOGIN_MAX_FAILURES } from '@/config/constants';
 import { logger } from '@/server/observability/logger';
-import { DUMMY_HASH_PROMISE, hashPassword, verifyPassword } from '@/server/auth/passwords';
+import { dummyHashPromise, hashPassword, verifyPassword } from '@/server/auth/passwords';
 import { UserExistsError, userRepository, type User } from '@/server/auth/user-repository';
 import { clearFailures, failureCount, recordFailure } from '@/server/security/rate-limit';
 import { startAuthSession, type AuthSession } from '@/server/security/session';
@@ -51,7 +51,7 @@ export async function login(
   const user = await repo.findByEmail(email);
 
   // Always derive, even with no user, so timing does not distinguish the cases.
-  const stored = user?.passwordHash ?? (await DUMMY_HASH_PROMISE);
+  const stored = user?.passwordHash ?? (await dummyHashPromise());
   const { valid, needsRehash } = await verifyPassword(password, stored);
 
   if (!user || !valid) {

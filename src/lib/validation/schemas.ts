@@ -272,12 +272,16 @@ export const CheckoutSchema = z
   })
   .strict();
 
-/** `OWN-` + 10 base32-ish characters. Validated before it touches a repository. */
+/**
+ * `OWN-` + 10 Crockford base32 characters (no I, L, O or U). Validated before it
+ * is ever used as a lookup key. Must stay in sync with `ALPHABET` in
+ * `src/server/orders/order-repository.ts`.
+ */
 export const OrderReferenceSchema = z
   .string()
   .trim()
   .toUpperCase()
-  .regex(/^OWN-[0-9A-HJ-NP-Z]{10}$/, 'Referencia de pedido inválida');
+  .regex(/^OWN-[0-9A-HJKMNP-TV-Z]{10}$/, 'Referencia de pedido inválida');
 
 /* -------------------------------------------------------------------------- */
 /* Auth                                                                       */

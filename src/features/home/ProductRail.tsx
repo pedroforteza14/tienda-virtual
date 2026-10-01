@@ -1,0 +1,225 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
+import { formatARS } from '@/lib/money';
+import { ButtonLink } from '@/components/ui/Button';
+import { SpecRails } from '@/components/ui/SpecRail';
+import { ProductRender } from '@/components/product/ProductRender';
+import { cn } from '@/lib/utils/cn';
+import type { RenderKind, Spec } from '@/types/catalog';
+
+/**
+ * ============================================================================
+ *  THE SCROLL NARRATIVE — object → detail → specification → hand-off.
+ * ============================================================================
+ *
+ * The brief's §6 example, built: a pinned section whose vertical scroll drives
+ * horizontal travel across four panels, ending by handing off to a different
+ * product.
+ *
+ * The rules it obeys (docs/motion-system.md):
+ *  - the container has a **real 220 vh height** and the stage is `sticky`, so the
+ *    scroll is never taken: a flick passes straight through;
+ *  - progress is a pure 0→1 value, so the whole thing is reversible and
+ *    interruptible by construction;
+ *  - ≤ 250 vh, and this is the only pinned section on the page;
+ *  - **on touch it is not pinned at all.** It becomes a real `overflow-x` snap
+ *    carousel, because driving horizontal travel from a vertical touch scroll is
+ *    hostile. The pin is enabled only after mount on a fine-pointer, wide
+ *    viewport — progressive enhancement, so the no-JS and mobile cases are the
+ *    default rather than the fallback;
+ *  - under reduced motion it is a plain, readable, scrollable row.
+ */
+
+export interface RailPanel {
+  id: string;
+  eyebrow: string;
+  title: string;
+  /** One italic serif word inside the title, for the editorial counterpoint. */
+  accent?: string;
+  body: string;
+  render: RenderKind;
+  color: { hex: string; hexAccent: string; name: string; light: boolean };
+  /** Device scale within the panel. The "zoom" panel uses a large value. */
+  zoom?: number;
+  specs?: Spec[];
+  cta?: { href: string; label: string };
+  price?: number;
+}
+
+export function ProductRail({ panels }: { panels: RailPanel[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const [pinned, setPinned] = useState(false);
+
+  /**
+   * Enable the pin only where it is appropriate. Checked after mount so the
+   * server-rendered markup is the carousel — which is what mobile, reduced-motion
+   * and no-JS visitors all get, without a flash of the wrong thing.
+   */
+  useEffect(() => {
+    if (reduced) return;
+    const query = window.matchMedia('(min-width: 64rem) and (pointer: fine)');
+    const update = () => setPinned(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [reduced]);
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start start', 'end end'],
+  });
+
+  // Travel the full width of the track minus one viewport.
+  const x = useTransform(scrollYProgress, [0, 1], ['0%', `-${(panels.length - 1) * 100}%`]);
+  // Hoisted out of the JSX: it sits inside a conditional branch down there, and a
+  // hook called conditionally is a hook called wrong.
+  const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+
+  return (
+    <section
+      ref={ref}
+      aria-labelledby="rail-heading"
+      className={cn('relative', pinned && 'h-[220vh]')}
+    >
+      <h2 id="rail-heading" className="sr-only">
+        Recorrido de producto
+      </h2>
+
+      <div
+        className={cn(
+          'overflow-hidden',
+          pinned ? 'sticky top-0 flex h-[100svh] items-center' : 'py-[var(--section-y)]',
+        )}
+      >
+        <motion.ol
+          style={pinned ? { x } : undefined}
+          className={cn(
+            'flex w-full',
+            // Not pinned: a real horizontal scroller with snap points. This is
+            // the mobile and reduced-motion experience, and it needs no JS.
+            !pinned && 'snap-x snap-mandatory gap-4 overflow-x-auto px-[var(--gutter)] pb-4',
+          )}
+        >
+          {panels.map((panel, index) => (
+            <li
+              key={panel.id}
+              className={cn(
+                'flex-none',
+                pinned
+                  ? 'w-screen'
+                  : 'w-[min(88vw,34rem)] snap-center rounded-[var(--radius-lg)] border border-[var(--line)] p-6',
+              )}
+            >
+              <Panel panel={panel} index={index} pinned={pinned} />
+            </li>
+          ))}
+        </motion.ol>
+      </div>
+
+      {/* Progress read-out. Mono, because it is an instrument. */}
+      {pinned ? (
+        <div className="pointer-events-none sticky bottom-6 z-10 -mt-16">
+          <div className="u-container flex items-center gap-3">
+            <span className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">01</span>
+            <span className="relative h-px flex-1 bg-[var(--line)]">
+              <motion.span
+                className="absolute inset-y-0 left-0 bg-[var(--accent)]"
+                style={{ width: progressWidth }}
+              />
+            </span>
+            <span className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">
+              {String(panels.length).padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function Panel({
+  panel,
+  index,
+  pinned,
+}: {
+  panel: RailPanel;
+  index: number;
+  pinned: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        pinned && 'u-container grid h-full items-center gap-10 lg:grid-cols-2 lg:gap-16',
+        !pinned && 'flex flex-col gap-6',
+      )}
+    >
+      {/* Device. On the zoom panel it is deliberately cropped by the stage —
+          the Dyson lesson: showing the inside of an object is persuasive. */}
+      <div
+        className={cn(
+          'relative grid place-items-center overflow-hidden',
+          pinned ? 'h-[min(62vh,30rem)] order-1 lg:order-2' : 'h-64',
+        )}
+      >
+        <span
+          aria-hidden="true"
+          className="absolute aspect-square w-[70%] rounded-full border border-[color-mix(in_oklab,var(--accent)_30%,transparent)]"
+        />
+        <div
+          className="relative h-full w-full"
+          style={{ transform: `scale(${panel.zoom ?? 1})` }}
+        >
+          <ProductRender
+            kind={panel.render}
+            color={panel.color}
+            productName={panel.title}
+            className="h-full w-full"
+            specular
+          />
+        </div>
+      </div>
+
+      {/* Copy */}
+      <div className={cn(pinned && 'order-2 lg:order-1')}>
+        <p className="u-label">
+          <span className="text-[var(--accent)]">{String(index + 1).padStart(2, '0')}</span> ·{' '}
+          {panel.eyebrow}
+        </p>
+
+        <h3 className="u-display-tight mt-4 max-w-[18ch] text-[var(--text-step-4)]">
+          {panel.accent ? (
+            <>
+              {panel.title.split(panel.accent)[0]}
+              <span className="u-editorial text-[var(--accent)]">{panel.accent}</span>
+              {panel.title.split(panel.accent)[1]}
+            </>
+          ) : (
+            panel.title
+          )}
+        </h3>
+
+        <p className="u-prose mt-4 text-[var(--text-step-0)] text-[var(--text-dim)]">{panel.body}</p>
+
+        {panel.specs ? <SpecRails specs={panel.specs} className="mt-6 max-w-xl" /> : null}
+
+        {panel.price !== undefined ? (
+          <p className="u-mono mt-6 text-[var(--text-step-1)]">
+            Desde {formatARS(panel.price)}
+            <span className="ml-2 text-[var(--text-step--2)] text-[var(--text-faint)]">
+              transferencia
+            </span>
+          </p>
+        ) : null}
+
+        {panel.cta ? (
+          <ButtonLink href={panel.cta.href} size="md" className="mt-6">
+            {panel.cta.label}
+          </ButtonLink>
+        ) : null}
+      </div>
+    </div>
+  );
+}

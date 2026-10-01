@@ -2,7 +2,7 @@
   "name": "owner-store",
   "version": "0.1.0",
   "private": true,
-  "description": "OWNER STORE — Technology, redefined. Premium Apple-product ecommerce for Argentina.",
+  "description": "OWNER STORE \u2014 Technology, redefined. Premium Apple-product ecommerce for Argentina.",
   "engines": {
     "node": ">=20.9.0"
   },
@@ -10,12 +10,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "clsx": "2.1.1",

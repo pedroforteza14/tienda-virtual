@@ -80,7 +80,33 @@ function load(): Env {
   const env = parsed.data;
   const isProduction = env.NODE_ENV === 'production';
 
-  if (isProduction) {
+  /**
+   * `next build` runs with `NODE_ENV=production` but **without runtime secrets**:
+   * CI compiles assets, and the secret is injected by the host when the app
+   * serves. Throwing here would make it impossible to build without production
+   * credentials, which is both inconvenient and bad practice — a build artefact
+   * should not need them.
+   *
+   * So during the build phase these become warnings; at request time they still
+   * throw. The security property is unchanged: a running production server
+   * refuses to serve without a real `SESSION_SECRET`.
+   */
+  const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
+  if (isProduction && isBuildPhase) {
+    const missing = [
+      !env.SESSION_SECRET && 'SESSION_SECRET',
+      !env.SITE_URL.startsWith('https://') && 'NEXT_PUBLIC_SITE_URL (must be https)',
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      console.warn(
+        `[owner] building without: ${missing.join(', ')}. ` +
+          'These are required at runtime and the server will refuse to start without them.',
+      );
+    }
+  }
+
+  if (isProduction && !isBuildPhase) {
     if (!env.SESSION_SECRET) {
       throw new Error(
         'SESSION_SECRET is required in production. Generate one with: ' +

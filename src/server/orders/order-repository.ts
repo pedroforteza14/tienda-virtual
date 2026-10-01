@@ -19,29 +19,25 @@ export interface OrderRepository {
 }
 
 /**
- * Crockford-style base32 without `I` or `O`, so a reference read over the phone
- * or copied from a WhatsApp message is unambiguous. Matches `OrderReferenceSchema`.
- */
-const ALPHABET = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-
-/**
- * Unguessable customer-facing reference.
+ * Crockford base32: no `I`, `L`, `O` or `U`.
  *
- * 34^10 ≈ 2·10^15 possibilities. Rejection sampling rather than `% 34`, because
- * modulo on a 256-value byte biases the first 16 characters of the alphabet —
- * a small bias, but there is no reason to accept one in an identifier that is
- * also an authorization hint. docs/threat-model.md §4.4.
+ * Two reasons for exactly these exclusions. First, references get read over the
+ * phone and pasted out of WhatsApp messages, and `I/1`, `L/1` and `O/0` are the
+ * confusions that actually happen. Second — the useful accident — dropping four
+ * letters leaves exactly **32** symbols, and 256 is a whole multiple of 32, so
+ * `byte % 32` is perfectly uniform. An alphabet of 34 would bias the first 16
+ * characters, which is a poor property for an identifier that is also an
+ * authorization hint.
+ *
+ * Must stay in sync with `OrderReferenceSchema`.
  */
+const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/** Unguessable customer-facing reference. 32^10 = 2^50 possibilities. */
 export function newOrderReference(): string {
-  const limit = Math.floor(256 / ALPHABET.length) * ALPHABET.length;
+  const bytes = randomBytes(10);
   let out = '';
-  while (out.length < 10) {
-    for (const byte of randomBytes(16)) {
-      if (byte >= limit) continue;
-      out += ALPHABET[byte % ALPHABET.length];
-      if (out.length === 10) break;
-    }
-  }
+  for (const byte of bytes) out += ALPHABET[byte % ALPHABET.length];
   return `OWN-${out}`;
 }
 

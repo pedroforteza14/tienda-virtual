@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Magnetic } from '@/components/motion/Magnetic';
 import { useCommerce } from '@/features/cart/CommerceProvider';
 
 /**
@@ -13,6 +12,12 @@ import { useCommerce } from '@/features/cart/CommerceProvider';
  *
  * It adds the cheapest in-stock variant — resolved on the server in `toCardData`,
  * so the SKU is one we know exists and can sell. The server re-validates anyway.
+ *
+ * Deliberately **not** wrapped in `<Magnetic>`. Doing so imported `motion` into the
+ * catalogue route and pushed its first-load JS from ~105 kB to ~159 kB, for a 3 px
+ * hover effect on a secondary button in a 12-up grid. The budget in
+ * docs/motion-system.md says the catalogue ships no animation JS, and a measurement
+ * that contradicts the budget means the effect goes, not the budget.
  */
 export function QuickAdd({
   sku,
@@ -27,7 +32,7 @@ export function QuickAdd({
   const [busy, setBusy] = useState(false);
 
   return (
-    <Magnetic className={className}>
+    <div className={className}>
       <Button
         variant="secondary"
         size="sm"
@@ -47,6 +52,6 @@ export function QuickAdd({
       >
         Agregar
       </Button>
-    </Magnetic>
+    </div>
   );
 }

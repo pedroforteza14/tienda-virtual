@@ -18,9 +18,23 @@ export type Centavos = number;
 
 export const CURRENCY = 'ARS' as const;
 
-/** Largest total we will ever construct. Guards against overflow-ish nonsense
- *  reaching a PSP: 1 000 000 000 centavos = ARS 10.000.000. */
-export const MAX_CENTAVOS = 1_000_000_000;
+/**
+ * Largest amount we will ever construct, as a sanity rail against absurd values
+ * reaching a PSP.
+ *
+ * 10^12 centavos = ARS 10.000.000.000. That looks generous until you do the
+ * arithmetic the cap has to survive: `MAX_CART_LINES` (20) × `MAX_QTY_PER_LINE`
+ * (5) × the most expensive variant in the catalogue. At today's prices that is
+ * roughly ARS 565.000.000 — so a cap of ARS 10.000.000 (the first value chosen
+ * here) threw `MoneyError` on five iPhone 17 Pro Max, which would have surfaced to
+ * a real customer as a 500 on add-to-cart.
+ *
+ * `tests/unit/pricing.test.ts` asserts this cap stays above the largest
+ * constructible cart, so Argentine inflation cannot quietly reintroduce the bug.
+ * It remains four orders of magnitude below `Number.MAX_SAFE_INTEGER`, so integer
+ * arithmetic is still exact.
+ */
+export const MAX_CENTAVOS = 1_000_000_000_000;
 
 export class MoneyError extends Error {
   constructor(message: string) {
