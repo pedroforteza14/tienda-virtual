@@ -335,6 +335,127 @@
     transition: transform var(--dur-slow) var(--ease-out-owner);
   }
 
+  /* ======================================================================== */
+  /*  THE PINNED RAIL                                                         */
+  /* ======================================================================== */
+
+  /**
+   * The scroll narrative has two genuinely different layouts, so CSS owns both
+   * of them outright. Two lessons are baked in here.
+   *
+   * 1. **The layout is chosen by media query, not by React state.** Applying it
+   *    after mount grew the section from `auto` to `220vh` right after hydration
+   *    — a cumulative layout shift of 0.56 against a 0.1 budget, visible as a
+   *    jump. CSS knows both conditions at first paint.
+   *
+   * 2. **No Tailwind utility sets anything these rules also set.** Our classes
+   *    live in `@layer components`, which utilities outrank — so a `w-[...]` on
+   *    the same element silently beat the media query and the panels never
+   *    resized. Mixing the two on one property does not work; one of them has to
+   *    own it, and for a layout this bimodal that is the stylesheet.
+   *
+   * Without JavaScript the stage stays a horizontal scroller, so every panel is
+   * still reachable; `data-pinned` opts into clipping only once the transform is
+   * actually driving.
+   */
+  .rail-stage {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-block: var(--section-y);
+  }
+
+  .rail-stage[data-pinned='true'] {
+    overflow: hidden;
+  }
+
+  .rail-track {
+    display: flex;
+    width: 100%;
+    gap: 1rem;
+    padding-inline: var(--gutter);
+    padding-bottom: 1rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .rail-panel {
+    flex: none;
+    width: min(88vw, 34rem);
+    scroll-snap-align: center;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
+
+  .rail-panel-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .rail-panel-visual {
+    order: 1;
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 16rem;
+    overflow: hidden;
+  }
+
+  .rail-panel-copy {
+    order: 2;
+    min-width: 0;
+  }
+
+  @media (min-width: 64rem) and (pointer: fine) {
+    .rail {
+      height: 220vh;
+    }
+
+    .rail-stage {
+      position: sticky;
+      top: 0;
+      display: flex;
+      height: 100svh;
+      align-items: center;
+      padding-block: 0;
+    }
+
+    .rail-track {
+      gap: 0;
+      padding-inline: 0;
+      padding-bottom: 0;
+      scroll-snap-type: none;
+    }
+
+    .rail-panel {
+      width: 100vw;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      scroll-snap-align: none;
+    }
+
+    .rail-panel-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 4rem;
+      height: 100%;
+      max-width: var(--measure-max);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+
+    .rail-panel-visual {
+      order: 2;
+      height: min(62vh, 30rem);
+    }
+
+    .rail-panel-copy {
+      order: 1;
+    }
+  }
+
   /* ========================================================================== */
   /*  SIGNATURE DEVICE 4 — SPECULAR SWEEP                                       */
   /* ========================================================================== */

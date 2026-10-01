@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { addOpenProductToCart, openBuyableProduct } from './fixtures';
 
 /**
  * Accessibility, verified in a browser rather than asserted in a document.
@@ -214,9 +215,10 @@ test.describe('reduced motion', () => {
 
 test.describe('forms', () => {
   test('checkout fields are labelled and errors are announced', async ({ page }) => {
-    await page.goto('/producto/airpods-4');
-    await page.getByRole('button', { name: /agregar al carrito/i }).first().click();
+    await openBuyableProduct(page);
+    await addOpenProductToCart(page);
     await page.getByRole('dialog').getByRole('link', { name: /checkout/i }).click();
+    await page.waitForURL(/\/checkout/);
 
     // Submitting empty surfaces per-field errors wired to the inputs.
     await page.getByRole('button', { name: /continuar/i }).click();

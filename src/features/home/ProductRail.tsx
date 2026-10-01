@@ -6,7 +6,6 @@ import { formatARS } from '@/lib/money';
 import { ButtonLink } from '@/components/ui/Button';
 import { SpecRails } from '@/components/ui/SpecRail';
 import { ProductRender } from '@/components/product/ProductRender';
-import { cn } from '@/lib/utils/cn';
 import type { RenderKind, Spec } from '@/types/catalog';
 
 /**
@@ -26,9 +25,10 @@ import type { RenderKind, Spec } from '@/types/catalog';
  *  - ≤ 250 vh, and this is the only pinned section on the page;
  *  - **on touch it is not pinned at all.** It becomes a real `overflow-x` snap
  *    carousel, because driving horizontal travel from a vertical touch scroll is
- *    hostile. The pin is enabled only after mount on a fine-pointer, wide
- *    viewport — progressive enhancement, so the no-JS and mobile cases are the
- *    default rather than the fallback;
+ *    hostile. Which layout applies is decided by a **media query**, not by React
+ *    state: deciding it after mount grew the section from `auto` to `220vh` right
+ *    after hydration, a cumulative layout shift of 0.56 against a 0.1 budget.
+ *    JavaScript is now responsible only for the transform;
  *  - under reduced motion it is a plain, readable, scrollable row.
  */
 
@@ -54,9 +54,9 @@ export function ProductRail({ panels }: { panels: RailPanel[] }) {
   const [pinned, setPinned] = useState(false);
 
   /**
-   * Enable the pin only where it is appropriate. Checked after mount so the
-   * server-rendered markup is the carousel — which is what mobile, reduced-motion
-   * and no-JS visitors all get, without a flash of the wrong thing.
+   * Whether to *drive* the transform. The layout is already correct from CSS, so
+   * this flag changes no geometry — only whether `x` is applied and whether the
+   * stage clips.
    */
   useEffect(() => {
     if (reduced) return;
@@ -79,41 +79,21 @@ export function ProductRail({ panels }: { panels: RailPanel[] }) {
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
 
   return (
-    <section
-      ref={ref}
-      aria-labelledby="rail-heading"
-      className={cn('relative', pinned && 'h-[220vh]')}
-    >
+    <section ref={ref} aria-labelledby="rail-heading" className="rail relative">
       <h2 id="rail-heading" className="sr-only">
         Recorrido de producto
       </h2>
 
-      <div
-        className={cn(
-          'overflow-hidden',
-          pinned ? 'sticky top-0 flex h-[100svh] items-center' : 'py-[var(--section-y)]',
-        )}
-      >
+      <div className="rail-stage" data-pinned={pinned}>
         <motion.ol
           style={pinned ? { x } : undefined}
-          className={cn(
-            'flex w-full',
-            // Not pinned: a real horizontal scroller with snap points. This is
-            // the mobile and reduced-motion experience, and it needs no JS.
-            !pinned && 'snap-x snap-mandatory gap-4 overflow-x-auto px-[var(--gutter)] pb-4',
-          )}
+          // Layout comes entirely from `.rail-track` — see globals.css for why no
+          // utility may set the same properties.
+          className="rail-track"
         >
           {panels.map((panel, index) => (
-            <li
-              key={panel.id}
-              className={cn(
-                'flex-none',
-                pinned
-                  ? 'w-screen'
-                  : 'w-[min(88vw,34rem)] snap-center rounded-[var(--radius-lg)] border border-line p-6',
-              )}
-            >
-              <Panel panel={panel} index={index} pinned={pinned} />
+            <li key={panel.id} className="rail-panel">
+              <Panel panel={panel} index={index} />
             </li>
           ))}
         </motion.ol>
@@ -140,30 +120,12 @@ export function ProductRail({ panels }: { panels: RailPanel[] }) {
   );
 }
 
-function Panel({
-  panel,
-  index,
-  pinned,
-}: {
-  panel: RailPanel;
-  index: number;
-  pinned: boolean;
-}) {
+function Panel({ panel, index }: { panel: RailPanel; index: number }) {
   return (
-    <div
-      className={cn(
-        pinned && 'u-container grid h-full items-center gap-10 lg:grid-cols-2 lg:gap-16',
-        !pinned && 'flex flex-col gap-6',
-      )}
-    >
+    <div className="rail-panel-inner">
       {/* Device. On the zoom panel it is deliberately cropped by the stage —
           the Dyson lesson: showing the inside of an object is persuasive. */}
-      <div
-        className={cn(
-          'relative grid place-items-center overflow-hidden',
-          pinned ? 'h-[min(62vh,30rem)] order-1 lg:order-2' : 'h-64',
-        )}
-      >
+      <div className="rail-panel-visual">
         <span
           aria-hidden="true"
           className="absolute aspect-square w-[70%] rounded-full border border-[color-mix(in_oklab,var(--accent)_30%,transparent)]"
@@ -183,7 +145,7 @@ function Panel({
       </div>
 
       {/* Copy */}
-      <div className={cn(pinned && 'order-2 lg:order-1')}>
+      <div className="rail-panel-copy">
         <p className="u-label">
           <span className="text-accent">{String(index + 1).padStart(2, '0')}</span> ·{' '}
           {panel.eyebrow}

@@ -8,11 +8,6 @@ import { catalog } from '@/server/catalog/repository';
 import { CatalogView } from '@/features/products/CatalogView';
 import { DEVICE_FAMILIES, type DeviceFamily } from '@/types/catalog';
 
-/** Pre-render every category at build time; there are six and they never change. */
-export function generateStaticParams() {
-  return DEVICE_FAMILIES.map((category) => ({ category }));
-}
-
 function resolveCategory(value: string): DeviceFamily | null {
   return (DEVICE_FAMILIES as readonly string[]).includes(value) ? (value as DeviceFamily) : null;
 }
@@ -54,6 +49,10 @@ export async function generateMetadata({
  *    hypothetical: it shipped, and the entire site was non-interactive in
  *    production — no cart, no search, no configurator — while every build, lint
  *    and type check passed. See docs/threat-model.md §4.5.
+ *
+ * `generateStaticParams` was removed rather than left in place: with
+ * `force-dynamic` it does nothing, and leaving it would suggest these routes are
+ * prerendered when they must not be. An unknown slug is still a `notFound()`.
  */
 export const dynamic = 'force-dynamic';
 

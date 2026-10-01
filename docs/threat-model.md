@@ -122,7 +122,8 @@ shipping and total are derived server-side, every time, from the catalogue.
 | DOM XSS | `dangerouslySetInnerHTML` is **lint-banned** (`react/no-danger: error`). The single exception is JSON-LD, which goes through `safeJsonLd()` — it serialises typed objects and escapes `<`, `>`, `&`, ` `, ` `. No user input ever reaches it. |
 | Stored XSS via a future review/Q&A | All user-authored text is validated on write, stored as text, rendered as a text node. Rich text is not supported; if it ever is, it is server-side sanitised to an allow-list. |
 | `javascript:` URL in a product link | Outbound URLs are built from a fixed base; any user-supplied URL is parsed and rejected unless the protocol is `https:`. |
-| Script injection through a dependency | Strict CSP with a per-request **nonce**, no `unsafe-inline` for scripts, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`. A skimmer injected into a bundle still cannot exfiltrate to an unlisted origin because `connect-src` is an allow-list. |
+| Script injection through a dependency | Strict CSP with a per-request **nonce** and `strict-dynamic`, no `unsafe-inline` for scripts, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`. A skimmer injected into a bundle still cannot exfiltrate to an unlisted origin, because `connect-src 'self'` is an allow-list. **A nonce requires dynamic rendering**: a per-request value cannot exist in a file generated once at build time. We shipped a prerendered build against this policy and the browser refused every script — the site was wholly non-interactive in production while all tests, types and lints passed. Every page therefore sets `export const dynamic = 'force-dynamic'`; removing it silently reintroduces the outage. |
+| Style injection | `style-src` does carry `'unsafe-inline'`, because React renders the `style` prop as an attribute and Next inlines critical CSS. Accepted knowingly: style injection is defacement and, in exotic setups, exfiltration — an order of magnitude below script execution, which keeps the strict policy. |
 | SVG XSS | `images.dangerouslyAllowSVG: false`; device renders are compiled React components, not uploaded files. |
 | SQL / NoSQL injection | No raw queries. **[PRE-LAUNCH]** the repository interfaces are designed for a parameterised/ORM implementation; ids are validated as UUIDs *before* reaching a repository. |
 
@@ -190,6 +191,11 @@ needs cross-origin access it must opt in with an explicit origin from `ALLOWED_O
 ### 4.11 Supply chain
 
 - 8 runtime dependencies, all first-tier maintained. Exact pinned versions, no ranges.
+- Audited and remediated rather than noted: the first run found 5 advisories including two
+  **critical** — among them an XSS in Next's App Router CSP-nonce handling, i.e. in the exact control
+  described above. Resolved by upgrading Next to 15.5.27, Vitest to 5, and pinning `postcss` through
+  an `overrides` entry because Next ships a vulnerable version internally. Currently **0
+  vulnerabilities**; removing the override reintroduces four.
 - `package-lock.json` committed; CI uses `npm ci`.
 - `npm audit` is part of `npm run verify` and gated in CI.
 - Lockfile reviewed for `postinstall` scripts.

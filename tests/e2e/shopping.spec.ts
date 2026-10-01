@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { addOpenProductToCart, completeCheckout, openBuyableProduct } from './fixtures';
 
 /**
  * The commercial path, end to end in a real browser.
@@ -40,39 +41,56 @@ test.describe('browse and buy', () => {
   });
 
   test('configurator updates price, SKU and stock without navigating', async ({ page }) => {
-    await page.goto('/producto/iphone-17-pro');
+    // The most expensive in-stock product is reliably one with variants.
+    await openBuyableProduct(page, { order: 'price-desc' });
 
     const url = page.url();
-    const priceRegion = page.locator('main');
 
-    // Capture the first visible price, change capacity, and expect it to change.
-    const before = await priceRegion.getByText(/^\$/).first().textContent();
+    /**
+     * The radios are `sr-only` inputs inside labels — a correct, accessible
+     * pattern that keyboard and screen-reader users navigate normally, but one
+     * Playwright cannot `check()`, because the input itself is clipped to 1×1.
+     * So the test does what a sighted user does and clicks the visible label.
+     */
 
-    const tiers = page.getByRole('radio', { name: /GB|TB/ });
-    if ((await tiers.count()) > 1) {
-      await tiers.nth(1).check();
-      await expect
-        .poll(async () => priceRegion.getByText(/^\$/).first().textContent())
-        .not.toBe(before);
+    // Precise locators, not "the first thing starting with $". An earlier version
+    // read the first `$` on the page, which on mobile is a *tier label's* price —
+    // a value that correctly never changes — so the assertion failed on working code.
+    const sku = page.getByText(/^OWN-[A-Z0-9-]+$/);
+    const transferPrice = page.getByText(/^Precio con transferencia:/);
+
+    const skuBefore = await sku.first().textContent();
+    const priceBefore = await transferPrice.first().textContent();
+
+    const tierLabels = page.locator('label').filter({ hasText: /^\d+\s?(GB|TB)/ });
+    if ((await tierLabels.count()) > 1) {
+      await tierLabels.nth(1).click();
+
+      // A different capacity is a different SKU at a different price, with no
+      // navigation and no page reload.
+      await expect.poll(async () => sku.first().textContent()).not.toBe(skuBefore);
+      await expect.poll(async () => transferPrice.first().textContent()).not.toBe(priceBefore);
     }
 
-    // Changing a colour must not navigate.
-    const colours = page.getByRole('radio').filter({ hasText: '' });
-    if ((await colours.count()) > 1) {
-      await colours.last().check();
+    // Changing a colour is also a different SKU, and also must not navigate.
+    const colourLabels = page.locator('label').filter({ has: page.locator('input[name="color"]') });
+    if ((await colourLabels.count()) > 1) {
+      const beforeColour = await sku.first().textContent();
+      await colourLabels.last().click();
+      await expect.poll(async () => sku.first().textContent()).not.toBe(beforeColour);
     }
+
     expect(page.url()).toBe(url);
   });
 
   test('add to cart, see server totals, and reach the checkout', async ({ page }) => {
-    await page.goto('/producto/airpods-pro-3');
+    const name = await openBuyableProduct(page);
+    await addOpenProductToCart(page);
 
-    await page.getByRole('button', { name: /agregar al carrito/i }).first().click();
-
-    // The drawer opens with the line and a server-computed total.
     const drawer = page.getByRole('dialog');
     await expect(drawer).toBeVisible();
-    await expect(drawer.getByText(/AirPods Pro 3/)).toBeVisible();
+    // `.first()`: the line title and the "quitar X del carrito" label both match.
+    await expect(drawer.getByText(name, { exact: false }).first()).toBeVisible();
     await expect(drawer.getByText(/Total transferencia/i)).toBeVisible();
 
     await drawer.getByRole('link', { name: /checkout/i }).click();
@@ -81,49 +99,19 @@ test.describe('browse and buy', () => {
   });
 
   test('completes a checkout and lands on an order with a reference', async ({ page }) => {
-    await page.goto('/producto/airpods-4');
-    await page.getByRole('button', { name: /agregar al carrito/i }).first().click();
-    await page.getByRole('dialog').getByRole('link', { name: /checkout/i }).click();
+    await openBuyableProduct(page, { order: 'recommended' });
+    await addOpenProductToCart(page);
+    await completeCheckout(page);
 
-    // Step 1 — customer.
-    await page.getByLabel(/nombre y apellido/i).fill('Ana López');
-    await page.getByLabel(/^email/i).fill('ana@example.com');
-    await page.getByLabel(/teléfono/i).fill('1145678900');
-    await page.getByRole('button', { name: /continuar/i }).click();
-
-    // Step 2 — pickup, which collects no address at all.
-    await page.getByRole('radio', { name: /retiro en showroom/i }).check();
-    await page.getByRole('button', { name: /continuar/i }).click();
-
-    // Step 3 — payment.
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/pago/i);
-    await page.getByRole('button', { name: /continuar/i }).click();
-
-    // Step 4 — review and confirm.
-    await page.getByRole('checkbox').check();
-    await page.getByRole('button', { name: /confirmar pedido/i }).click();
-
-    await expect(page).toHaveURL(/\/pedido\/OWN-/, { timeout: 20_000 });
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/gracias/i);
     // The reference is shown, and it is not sequential.
     await expect(page.getByText(/OWN-[0-9A-HJKMNP-TV-Z]{10}/).first()).toBeVisible();
   });
 
   test('an order page belonging to another session is a 404, not a 403', async ({ page, context }) => {
-    // Place an order in one browser context.
-    await page.goto('/producto/magsafe-charger');
-    await page.getByRole('button', { name: /agregar al carrito/i }).first().click();
-    await page.getByRole('dialog').getByRole('link', { name: /checkout/i }).click();
-    await page.getByLabel(/nombre y apellido/i).fill('Ana López');
-    await page.getByLabel(/^email/i).fill('ana@example.com');
-    await page.getByLabel(/teléfono/i).fill('1145678900');
-    await page.getByRole('button', { name: /continuar/i }).click();
-    await page.getByRole('radio', { name: /retiro en showroom/i }).check();
-    await page.getByRole('button', { name: /continuar/i }).click();
-    await page.getByRole('button', { name: /continuar/i }).click();
-    await page.getByRole('checkbox').check();
-    await page.getByRole('button', { name: /confirmar pedido/i }).click();
-    await expect(page).toHaveURL(/\/pedido\/OWN-/, { timeout: 20_000 });
+    await openBuyableProduct(page, { order: 'price-desc' });
+    await addOpenProductToCart(page);
+    await completeCheckout(page);
 
     const orderUrl = page.url();
 
@@ -154,8 +142,9 @@ test.describe('browse and buy', () => {
   test('discovery recommends products for a use case', async ({ page }) => {
     await page.goto('/descubri');
 
-    await page.getByRole('radio', { name: /creatividad/i }).check();
-    await page.getByRole('radio', { name: /sin techo/i }).check();
+    // Same sr-only-input pattern as the configurator: click the visible card.
+    await page.locator('label').filter({ hasText: /creatividad/i }).click();
+    await page.locator('label').filter({ hasText: /sin techo/i }).click();
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/serviría/i, {
       timeout: 15_000,
@@ -184,12 +173,11 @@ test.describe('browse and buy', () => {
 
 test.describe('cart behaviour', () => {
   test('quantity changes and removal are reflected by the server', async ({ page }) => {
-    await page.goto('/producto/airpods-4');
-    await page.getByRole('button', { name: /agregar al carrito/i }).first().click();
+    // Needs headroom to increase: the stepper correctly disables `+` at the cap.
+    await openBuyableProduct(page, { minStock: 2 });
+    await addOpenProductToCart(page);
 
     const drawer = page.getByRole('dialog');
-    await expect(drawer).toBeVisible();
-
     const increase = drawer.getByRole('button', { name: /agregar una unidad/i }).first();
     await increase.click();
     await expect(drawer.getByRole('spinbutton').first()).toHaveValue('2');
@@ -199,8 +187,8 @@ test.describe('cart behaviour', () => {
   });
 
   test('an invalid promo code is reported without failing the request', async ({ page }) => {
-    await page.goto('/producto/airpods-4');
-    await page.getByRole('button', { name: /agregar al carrito/i }).first().click();
+    await openBuyableProduct(page);
+    await addOpenProductToCart(page);
 
     const drawer = page.getByRole('dialog');
     await drawer.getByLabel(/código de descuento/i).fill('NOPEXYZ');

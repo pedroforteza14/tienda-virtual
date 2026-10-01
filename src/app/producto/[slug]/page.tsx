@@ -18,13 +18,6 @@ import { Reveal } from '@/components/motion/Reveal';
 import { Ledger } from '@/components/layout/Ledger';
 import { PRICES_ARE_MOCK } from '@/data/catalog';
 
-/** Every product is pre-rendered at build time. */
-export function generateStaticParams() {
-  return catalog()
-    .listProducts()
-    .map((product) => ({ slug: product.slug }));
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -73,6 +66,10 @@ export async function generateMetadata({
  *    hypothetical: it shipped, and the entire site was non-interactive in
  *    production — no cart, no search, no configurator — while every build, lint
  *    and type check passed. See docs/threat-model.md §4.5.
+ *
+ * `generateStaticParams` was removed rather than left in place: with
+ * `force-dynamic` it does nothing, and leaving it would suggest these routes are
+ * prerendered when they must not be. An unknown slug is still a `notFound()`.
  */
 export const dynamic = 'force-dynamic';
 

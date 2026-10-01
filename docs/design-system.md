@@ -43,6 +43,17 @@ Two notes on how this table shaped the palette rather than just describing it:
 
 ---
 
+### Colours and sizes are utilities, never arbitrary values
+
+Both the type scale and the semantic colours are registered in Tailwind's `--text-*` and `--color-*`
+namespaces, so markup says `text-h2` and `text-fg-dim` rather than `text-[var(--text-h2)]`.
+
+This is enforced by `tests/unit/tokens.test.ts` and `tests/unit/cn.test.ts`, because the arbitrary
+form broke twice in different ways: Tailwind resolved `text-[var(--text-hero)]` as a *colour*, so
+every heading rendered at 16px; and `tailwind-merge`, unable to group a custom name, treated a size
+and a colour as conflicting and **dropped one of them** on every element that set both. Neither
+failure produced an error.
+
 ## Space & grid
 
 A single 4 px base, exposed as `--space-1` (4 px) … `--space-24` (96 px), plus two section

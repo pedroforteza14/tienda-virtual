@@ -114,6 +114,17 @@ describe('catalogue integrity', () => {
     }
   });
 
+  it('leaves no product entirely unbuyable', () => {
+    // A listing with every variant at zero is a dead product and, as it turned
+    // out, a fixture that breaks any test hardcoding it.
+    for (const product of products) {
+      expect(
+        product.variants.some((variant) => variant.stock > 0),
+        `${product.slug} has no buyable variant`,
+      ).toBe(true);
+    }
+  });
+
   it('exercises the out-of-stock UI somewhere', () => {
     // The pseudo-random stock function is meant to leave some variants at zero so
     // the sold-out states are always reachable in development and in screenshots.

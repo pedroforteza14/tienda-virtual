@@ -141,8 +141,18 @@ All three are self-hosted through `next/font/google` at build time: no runtime r
 `fonts.googleapis.com`, which also means our CSP needs no third-party font origin. Latin subset
 only, `display: swap`, and the display face preloaded.
 
-Scale is fluid, `clamp()`-based, and defined once in `tokens.css`:
-`--step--1` … `--step-7`, where `--step-7` is the hero (`clamp(3.5rem, 13vw, 11rem)`).
+Scale is fluid, `clamp()`-based, and defined once in `tokens.css` as
+`--text-micro` … `--text-hero`. These are **named, not numbered**, and they live in Tailwind's
+`--text-*` namespace so they compile to real utilities (`text-hero`, `text-h2`).
+
+That is a correctness requirement, not a style preference. Written as
+`text-[var(--text-hero)]`, Tailwind v4 cannot tell a length from a colour and resolves it as a
+*colour* — every heading in the application silently rendered at the inherited 16px while the markup
+looked right. `tests/unit/tokens.test.ts` now bans the arbitrary form outright.
+
+The hero tops out at `6.5rem`, down from an initial `11rem`: at 176px the word "TECHNOLOGY" spanned
+the whole viewport, broke mid-word, and buried the product behind it — loud, not premium, and the
+opposite of product-as-hero.
 
 ### Voice: bilingual on purpose
 Display and conceptual copy in **English**; everything functional, commercial and legal in

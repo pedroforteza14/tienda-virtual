@@ -6,10 +6,6 @@ import { JsonLd } from '@/lib/seo/json-ld';
 import { breadcrumbSchema } from '@/lib/seo/schema';
 import { LEGAL_IS_DRAFT, getLegalPage, legalPages } from '@/data/legal';
 
-export function generateStaticParams() {
-  return legalPages.map((page) => ({ slug: page.slug }));
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -54,6 +50,10 @@ export async function generateMetadata({
  *    hypothetical: it shipped, and the entire site was non-interactive in
  *    production — no cart, no search, no configurator — while every build, lint
  *    and type check passed. See docs/threat-model.md §4.5.
+ *
+ * `generateStaticParams` was removed rather than left in place: with
+ * `force-dynamic` it does nothing, and leaving it would suggest these routes are
+ * prerendered when they must not be. An unknown slug is still a `notFound()`.
  */
 export const dynamic = 'force-dynamic';
 

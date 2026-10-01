@@ -71,6 +71,21 @@ function buildVariants({
     });
   }
 
+  /**
+   * Guarantee at least one buyable variant per product.
+   *
+   * The 1-in-9 zero rule is there so the sold-out states are always reachable,
+   * but applied blindly it can zero *every* variant of a single-SKU product —
+   * which it did to AirPods 4, leaving a listing nobody could buy and an e2e
+   * suite that failed on a product it had hardcoded. A product with no sellable
+   * variant is a data bug, not a realistic edge case; individual variants may
+   * still be sold out, and `tests/unit/catalog.test.ts` asserts both halves.
+   */
+  if (variants.every((variant) => variant.stock === 0)) {
+    const first = variants[0];
+    if (first) first.stock = 4;
+  }
+
   return variants;
 }
 

@@ -11,6 +11,7 @@ import {
   useState,
   startTransition,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import { apiFetch } from '@/lib/http/client';
 import type { PricedCart } from '@/types/commerce';
 
@@ -192,6 +193,22 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  /**
+   * Close every overlay on navigation.
+   *
+   * Without this, "Ir al checkout" inside the cart drawer navigated with the
+   * drawer still open: the checkout page rendered *behind* a full-screen backdrop
+   * that swallowed every click, and the page looked broken. Individual links were
+   * calling `setCartOpen(false)` by hand, which is exactly the kind of thing that
+   * gets forgotten on the next link added.
+   */
+  const pathname = usePathname();
+  useEffect(() => {
+    setCartOpen(false);
+    setSearchOpen(false);
+    setMenuOpen(false);
+  }, [pathname]);
 
   /** One overlay at a time — two stacked modals is a focus-trap fight. */
   useEffect(() => {

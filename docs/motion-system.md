@@ -109,9 +109,10 @@ reduced motion.
 - At most **three** elements animate concurrently in a viewport.
 - `motion` is imported per-route (`optimizePackageImports`), never from a shared client shell. The
   catalogue, checkout and legal routes ship **no** animation JS. Measured first-load JS from
-  `next build`: legal 105 kB, catalogue 121 kB, checkout 136 kB, discovery 166 kB, home 167 kB,
-  product 169 kB — against a 102 kB framework baseline. Only the three routes with a real narrative
+  `next build`: legal ~106 kB, catalogue 125 kB, checkout 137 kB, discovery 167 kB, home 168 kB,
+  product ~170 kB — against a 103 kB framework baseline. Only the three routes with a real narrative
   pay for motion. This is a budget, not an observation: a magnetic hover on the catalogue's
-  quick-add button cost 38 kB there and was removed rather than rationalised.
+  quick-add button cost 38 kB there and was removed rather than rationalised. `docs/design-review.md`
+  §5 is honest that 168 kB on the home page is the price of the narrative, not a good number.
 - Budget: no scroll-linked frame may exceed **8 ms** on a mid-range Android. If a move cannot hold
   that, it is cut rather than throttled.
