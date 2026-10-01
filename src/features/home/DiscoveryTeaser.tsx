@@ -59,7 +59,7 @@ export function DiscoveryTeaser() {
                 >
                   <span
                     aria-hidden="true"
-                    className="size-8 flex-none rounded-full border border-[color-mix(in_oklab,var(--accent)_45%,transparent)] transition-transform duration-[var(--dur-base)] ease-[var(--ease-out-owner)] group-hover/option:scale-125"
+                    className="size-8 flex-none rounded-full border border-[color-mix(in_oklab,var(--accent)_80%,transparent)] transition-transform duration-[var(--dur-base)] ease-[var(--ease-out-owner)] group-hover/option:scale-125"
                   />
                   <span className="block">
                     <span className="u-display-tight block text-lead text-fg">

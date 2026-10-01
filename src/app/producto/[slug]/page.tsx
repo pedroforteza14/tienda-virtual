@@ -154,18 +154,27 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </ol>
       </nav>
 
-      <header className="u-container relative mt-8">
-        <p className="u-label">{category?.name ?? product.family}</p>
-        <h1 className="u-display mt-3 max-w-[18ch] text-h1">{product.name}</h1>
-        <p className="u-editorial mt-3 text-h4 text-accent">
-          {product.tagline}
-        </p>
-        <p className="u-prose mt-5 text-body text-fg-dim">
+      {/*
+        Order differs by viewport, via `order` rather than duplicated markup.
+
+        On a phone the price, the variants and the CTA come before the prose: the
+        visitor arrived from an Instagram story to find out what it costs, and
+        two paragraphs of narrative above the fold is a paragraph of narrative
+        between them and the sale. On desktop the summary reads as editorial
+        under the title, where there is room for both.
+      */}
+      <div className="flex flex-col">
+        <header className="u-container relative order-1 mt-8">
+          <p className="u-label">{category?.name ?? product.family}</p>
+          <h1 className="u-display mt-3 max-w-[18ch] text-h1">{product.name}</h1>
+          <p className="u-editorial mt-3 text-h4 text-accent">{product.tagline}</p>
+        </header>
+
+        <p className="u-container u-prose order-3 mt-10 text-body text-fg-dim lg:order-2 lg:mt-5">
           {product.summary}
         </p>
-      </header>
 
-      <div className="mt-12">
+        <div className="order-2 mt-10 lg:order-3 lg:mt-12">
         <ProductConfigurator
           name={product.name}
           render={product.render}
@@ -181,6 +190,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           variants={variants}
           highlights={product.highlights}
         />
+        </div>
       </div>
 
       {/* --------------------------- SPECIFICATIONS -------------------------- */}

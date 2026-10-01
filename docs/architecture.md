@@ -121,3 +121,10 @@ Three layers, split by what each can actually prove.
 The split is deliberate. The security boundary lives in the guard, so that is where it is tested;
 the things a browser alone can reveal are tested in a browser. Several bugs in this codebase were
 invisible to the first two layers and obvious in the third — see `docs/design-review.md`.
+
+**The e2e suite shares one server, and that is treated as a fact rather than wished away.** An order
+placed by one test genuinely consumes stock for another, and parallel workers racing for the same
+product exhaust it — which is the application behaving correctly. So the specs do not hardcode a
+slug: `openBuyableProduct()` discovers a product that is actually available, checks the quantity
+stepper's `max`, and picks at random so workers spread out. A purchase test should assert that *a*
+customer can buy *a* product, not that one SKU happened to be in stock on this run.

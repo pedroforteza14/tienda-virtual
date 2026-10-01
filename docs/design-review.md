@@ -33,10 +33,19 @@ were found by looking at the running thing.
 | 14 | Module-level `await` reading env | Build failed without production secrets | `next build` |
 | 15 | `robots.txt` keyed on `NODE_ENV` while prerendered | Staging could outrank production | Reasoning during #14 |
 | 16 | 5 advisories, 2 critical — including XSS in App Router CSP nonces | — | `npm audit` |
+| 17 | **Cart drawer stayed open across navigation** | Checkout loaded behind a backdrop that swallowed every click | e2e, after fixing #1 |
+| 18 | CLS of 0.56 against a 0.1 budget | The pinned rail grew from `auto` to 220vh after hydration | Visual-QA sweep |
+| 19 | Media-query rules lost to Tailwind utilities | The fix for #18 silently did nothing; panels never resized | Measuring the fix |
+| 20 | Mobile PDP put two paragraphs of prose above the price | Narrative between the visitor and the sale | Screenshot review |
+
+Several of the later ones are worth noting as a pattern: **each fix exposed the next defect.** #1
+was hiding #17 (no JavaScript ran, so the drawer could never stay open); #18's fix created #19. A
+single pass would have found one of them.
 
 **The lesson, stated plainly:** a type system and a linter verify that code is *well-formed*, not
-that it is *right*. Four of these (#1, #2, #3, #5) were tools silently guessing wrong about ambiguous
-input, and no amount of re-reading the source would have surfaced them. The visual-QA and
+that it is *right*. Five of these (#1, #2, #3, #5, #19) were tools silently guessing wrong about ambiguous input — a
+framework resolving a nonce, a class parser choosing between a length and a colour, a cascade layer
+deciding precedence — and no amount of re-reading the source would have surfaced them. The visual-QA and
 accessibility sweeps are now permanent tests precisely so they are not a one-time pass.
 
 ---
@@ -82,6 +91,8 @@ its own bottom nav, its own buy bar, and an inverted content order.
 - **The discovery flow asks two questions and stops.** It is honest and fast, but "find your device"
   implies more intelligence than a use case and a budget ceiling.
 - **The empty cart is prettier than the full cart.** The full drawer is functional and a bit dense.
+- **The checkout is sparse at desktop width.** Three fields and a summary leave a lot of unused
+  canvas; it is calm rather than designed.
 - **Five sold-out variants in twenty products** is realistic but makes the first catalogue screen
   feel thinner than the range actually is.
 
@@ -167,7 +178,7 @@ account. The logger redacts by key name recursively, so redaction is not a calle
 | Is the product the protagonist? | Yes — after being literally invisible twice during the build. |
 | Does the user know what to do? | Yes. Price and a primary action are on the first screen of every commercial page. |
 | Does mobile work? | Yes, and it is a separate design. |
-| Is it fast? | Reasonably. 102 kB baseline, 124 kB catalogue, 167 kB home. The home page is the price of the narrative. |
+| Is it fast? | Reasonably. 103 kB baseline, 125 kB catalogue, 168 kB home, and CLS 0.0000 after the rail fix. The home page is the price of the narrative. |
 | Are there security risks? | Yes, and they are enumerated above and in `SECURITY.md` rather than being implied away. |
 
 ---

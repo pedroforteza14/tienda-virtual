@@ -407,7 +407,7 @@ function OptionCard({
         aria-hidden="true"
         className={cn(
           'grid size-9 place-items-center rounded-full border transition-colors',
-          checked ? 'border-accent' : 'border-[color-mix(in_oklab,var(--accent)_45%,transparent)]',
+          checked ? 'border-accent' : 'border-[color-mix(in_oklab,var(--accent)_80%,transparent)]',
         )}
       >
         <span

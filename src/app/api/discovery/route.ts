@@ -14,7 +14,8 @@ import { productPricing } from '@/server/pricing/pricing';
 export const POST = guarded(
   { bucket: 'api', schema: DiscoveryAnswersSchema },
   async ({ data }) => {
-    const recommendations = catalog().recommend(data.useCase, data.budget, 4);
+    const repo = catalog();
+    const recommendations = repo.recommend(data.useCase, data.budget, 4);
 
     return jsonOk({
       useCase: data.useCase,
@@ -23,7 +24,9 @@ export const POST = guarded(
         return {
           slug: product.slug,
           name: product.name,
-          family: product.family,
+          // The customer-facing category name, not the internal slug: the
+          // recommendation eyebrow was reading "ACCESSORIES" at people.
+          family: repo.getCategory(product.family)?.name ?? product.family,
           tagline: product.tagline,
           summary: product.summary,
           highlights: product.highlights.slice(0, 2),

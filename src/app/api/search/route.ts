@@ -25,7 +25,8 @@ export const GET = guarded(
       return jsonOk({ query, results: [], total: 0 });
     }
 
-    const matches = catalog().search(query, MAX_SEARCH_RESULTS);
+    const repo = catalog();
+    const matches = repo.search(query, MAX_SEARCH_RESULTS);
 
     return jsonOk({
       query,
@@ -35,7 +36,8 @@ export const GET = guarded(
         return {
           slug: product.slug,
           name: product.name,
-          family: product.family,
+          // Customer-facing name, not the internal slug.
+          family: repo.getCategory(product.family)?.name ?? product.family,
           tagline: product.tagline,
           render: product.render,
           color: {

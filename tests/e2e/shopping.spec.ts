@@ -62,9 +62,20 @@ test.describe('browse and buy', () => {
     const skuBefore = await sku.first().textContent();
     const priceBefore = await transferPrice.first().textContent();
 
-    const tierLabels = page.locator('label').filter({ hasText: /^\d+\s?(GB|TB)/ });
-    if ((await tierLabels.count()) > 1) {
-      await tierLabels.nth(1).click();
+    /**
+     * Click an option that is not already selected.
+     *
+     * The configurator defaults to the first *in-stock* combination, which is not
+     * necessarily the first one listed — on a Mac mini it was the second capacity.
+     * Clicking by index therefore sometimes re-selected the current value and
+     * asserted that nothing had changed, which is true and useless.
+     */
+    const unselected = (name: string) =>
+      page.locator(`label:has(input[name="${name}"]:not(:checked))`);
+
+    const tierLabels = unselected('tier');
+    if ((await tierLabels.count()) > 0) {
+      await tierLabels.first().click();
 
       // A different capacity is a different SKU at a different price, with no
       // navigation and no page reload.
@@ -73,10 +84,10 @@ test.describe('browse and buy', () => {
     }
 
     // Changing a colour is also a different SKU, and also must not navigate.
-    const colourLabels = page.locator('label').filter({ has: page.locator('input[name="color"]') });
-    if ((await colourLabels.count()) > 1) {
+    const colourLabels = unselected('color');
+    if ((await colourLabels.count()) > 0) {
       const beforeColour = await sku.first().textContent();
-      await colourLabels.last().click();
+      await colourLabels.first().click();
       await expect.poll(async () => sku.first().textContent()).not.toBe(beforeColour);
     }
 
