@@ -58,9 +58,20 @@ export function Hero({ product }: { product: HeroProduct }) {
   const deviceRotate = useTransform(scrollYProgress, [0, 1], [-7, 4]);
   const titleY = useTransform(scrollYProgress, [0, 0.6], [0, -120]);
   const titleOpacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
-  const detailOpacity = useTransform(scrollYProgress, [0.18, 0.5], [0, 1]);
-  const detailY = useTransform(scrollYProgress, [0.18, 0.5], [28, 0]);
-  const vignette = useTransform(scrollYProgress, [0, 0.7], [0.85, 0.2]);
+  /**
+   * The commercial strip is visible from the first frame.
+   *
+   * It used to fade in from 0 across the first half of the scroll, which looked
+   * elegant and cost sales: a visitor arriving from an Instagram story saw a
+   * beautiful object and no price, no financing and no way to buy until they
+   * scrolled. On mobile that is the entire first screen. It now only *rises*
+   * slightly — motion that decorates, never motion that withholds. This is also
+   * what docs/creative-direction.md §9 commits to: price and financing are never
+   * ambiguous for a single frame.
+   */
+  const detailOpacity = useTransform(scrollYProgress, [0, 0.55], [1, 0.9]);
+  const detailY = useTransform(scrollYProgress, [0, 0.4], [10, 0]);
+  const vignette = useTransform(scrollYProgress, [0, 0.7], [0.7, 0.15]);
 
   /* Reduced motion: the resolved state, as a static value. */
   const motionProps = reduced
@@ -69,7 +80,7 @@ export function Hero({ product }: { product: HeroProduct }) {
         device: { scale: 1, y: 0, rotateY: 0 },
         title: { y: 0, opacity: 1 },
         detail: { opacity: 1, y: 0 },
-        vignette: 0.35,
+        vignette: 0.3,
       }
     : null;
 
@@ -77,7 +88,7 @@ export function Hero({ product }: { product: HeroProduct }) {
     <div ref={ref} className="relative h-[175vh]">
       <section
         aria-labelledby="hero-heading"
-        className="sticky top-0 flex h-[100svh] flex-col justify-between overflow-hidden"
+        className="sticky top-0 flex h-[100svh] flex-col overflow-hidden"
       >
         <Ledger />
 
@@ -88,73 +99,84 @@ export function Hero({ product }: { product: HeroProduct }) {
           style={{
             opacity: motionProps ? motionProps.vignette : vignette,
             background:
-              'radial-gradient(120% 90% at 50% 42%, transparent 20%, var(--color-ink-sunken) 100%)',
+              'radial-gradient(110% 80% at 68% 45%, transparent 28%, var(--color-ink-sunken) 100%)',
           }}
         />
 
-        {/* ------------------------------- STAGE ------------------------------ */}
-        <div className="pointer-events-none absolute inset-0 grid place-items-center">
-          <motion.div
-            aria-hidden="true"
-            className="aperture"
-            style={{
-              ...(motionProps ? motionProps.aperture : { scale: apertureScale, opacity: apertureOpacity }),
-              ['--aperture-size' as string]: 'min(78vw, 42vh)',
-            }}
-          />
+        {/*
+          The composition: a left-weighted editorial stack against a
+          right-weighted object, on one grid. Apple centres; we do not.
 
+          The object gets its own column rather than sitting behind the type —
+          an earlier version centred it under the headline, where it was simply
+          invisible. "Product as hero" has to mean the product is actually
+          visible.
+        */}
+        <div className="u-container relative z-10 grid flex-1 items-center gap-8 pt-[calc(var(--header-h)+1rem)] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-10">
+          {/* ----------------------------- EDITORIAL -------------------------- */}
           <motion.div
-            className="relative h-[58vh] w-[min(62vw,22rem)]"
-            style={
-              motionProps
-                ? motionProps.device
-                : { scale: deviceScale, y: deviceY, rotateY: deviceRotate }
-            }
+            className="order-2 min-w-0 lg:order-1"
+            style={motionProps ? motionProps.title : { y: titleY, opacity: titleOpacity }}
           >
-            <ProductRender
-              kind={product.render}
-              color={product.color}
-              productName={product.name}
-              className="h-full w-full [transform-style:preserve-3d]"
-              specular
-              priority
-            />
-          </motion.div>
-        </div>
+            <p className="u-label mb-4">Owner Store · Argentina</p>
 
-        {/* ------------------------------ EDITORIAL --------------------------- */}
-        <motion.div
-          className="u-container relative z-10 pt-[calc(var(--header-h)+clamp(2rem,8vh,5rem))]"
-          style={motionProps ? motionProps.title : { y: titleY, opacity: titleOpacity }}
-        >
-          <p className="u-label mb-5">Owner Store · Argentina</p>
-
-          {/* The hero stack is left-weighted and off-centre, against the
-              right-weighted object. Apple centres; we do not. */}
-          <h1 id="hero-heading" className="u-display max-w-[11ch] text-[var(--text-step-7)]">
-            <span className="block">Owner</span>
-            <span className="block text-[var(--text-dim)]">Technology</span>
-            <span className="block">
-              <span className="u-editorial pr-[0.08em] text-[var(--accent)] normal-case">
-                redefined
+            <h1 id="hero-heading" className="u-display text-hero">
+              <span className="block">Owner</span>
+              <span className="block text-fg-dim">Technology</span>
+              <span className="block">
+                <span className="u-editorial pr-[0.06em] text-accent normal-case">
+                  redefined
+                </span>
+                <span className="text-accent">.</span>
               </span>
-              .
-            </span>
-          </h1>
-        </motion.div>
+            </h1>
+          </motion.div>
+
+          {/* ------------------------------- STAGE ---------------------------- */}
+          <div className="relative order-1 grid min-w-0 place-items-center lg:order-2">
+            <motion.div
+              aria-hidden="true"
+              className="aperture absolute"
+              style={{
+                ...(motionProps
+                  ? motionProps.aperture
+                  : { scale: apertureScale, opacity: apertureOpacity }),
+                ['--aperture-size' as string]: 'min(66vw, 28rem, 38vh)',
+              }}
+            />
+
+            <motion.div
+              className="relative h-[min(38vh,20rem)] w-full sm:h-[min(44vh,24rem)] lg:h-[min(60vh,32rem)]"
+              style={
+                motionProps
+                  ? motionProps.device
+                  : { scale: deviceScale, y: deviceY, rotateY: deviceRotate }
+              }
+            >
+              <ProductRender
+                kind={product.render}
+                color={product.color}
+                productName={product.name}
+                className="h-full w-full [transform-style:preserve-3d]"
+                specular
+                priority
+              />
+            </motion.div>
+          </div>
+        </div>
 
         {/* ----------------------------- COMMERCIAL --------------------------- */}
         <motion.div
-          className="u-container relative z-10 pb-[clamp(1.5rem,5vh,3rem)]"
+          className="u-container relative z-10 shrink-0 pb-[clamp(1rem,4vh,2.5rem)]"
           style={motionProps ? motionProps.detail : { opacity: detailOpacity, y: detailY }}
         >
-          <div className="flex flex-col gap-5 border-t border-[var(--line)] pt-5 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-5 border-t border-line pt-5 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="u-label">En foco</p>
-              <p className="u-display-tight mt-2 text-[var(--text-step-2)]">{product.name}</p>
-              <p className="u-mono mt-1.5 text-[var(--text-step--1)] text-[var(--text-dim)]">
+              <p className="u-display-tight mt-2 text-h4">{product.name}</p>
+              <p className="u-mono mt-1.5 text-tiny text-fg-dim">
                 Desde {formatARS(product.fromTransfer)} con transferencia ·{' '}
-                <span className="text-[var(--accent)]">
+                <span className="text-accent">
                   {product.instalmentCount} cuotas de {formatARS(product.instalment)}
                 </span>
               </p>

@@ -25,10 +25,10 @@ export default function NotFound() {
       <div className="text-center">
         <Aperture size="7rem" className="mx-auto" />
         <p className="u-label mt-10">Error 404</p>
-        <h1 className="u-display mt-4 text-[var(--text-step-5)]">
-          Nothing <span className="u-editorial text-[var(--accent)] normal-case">here</span>.
+        <h1 className="u-display mt-4 text-h1">
+          Nothing <span className="u-editorial text-accent normal-case">here</span>.
         </h1>
-        <p className="u-prose mx-auto mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">
+        <p className="u-prose mx-auto mt-5 text-body text-fg-dim">
           La página que buscás no existe, cambió de dirección, o el enlace no es tuyo.
         </p>
 
@@ -47,7 +47,7 @@ export default function NotFound() {
               <li key={family}>
                 <Link
                   href={`/tienda/${family}`}
-                  className="u-mono text-[var(--text-step--2)] uppercase tracking-[0.12em] text-[var(--text-faint)] transition-colors hover:text-[var(--accent)]"
+                  className="u-mono text-micro uppercase tracking-[0.12em] text-fg-faint transition-colors hover:text-accent"
                 >
                   {CATEGORY_LABELS[family] ?? family}
                 </Link>

@@ -76,7 +76,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
       className={cn(
         'fixed inset-x-0 top-0 z-40 transition-[background-color,border-color,backdrop-filter] duration-[var(--dur-base)]',
         condensed || megaOpen
-          ? 'border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--surface)_88%,transparent)] backdrop-blur-xl'
+          ? 'border-b border-line bg-[color-mix(in_oklab,var(--surface)_88%,transparent)] backdrop-blur-xl'
           : 'border-b border-transparent bg-transparent',
       )}
       onBlur={(event) => {
@@ -96,7 +96,8 @@ export function HeaderShell({ nav }: { nav: NavData }) {
       <div className="u-container flex h-[var(--header-h)] items-center justify-between gap-4">
         <Link
           href="/"
-          className="flex items-center rounded-[var(--radius-xs)] py-2"
+          // 44px tall: this is the primary "go home" target, not an inline link.
+          className="flex min-h-11 items-center rounded-[var(--radius-xs)] pr-2"
           aria-label="OWNER STORE, inicio"
         >
           <Wordmark />
@@ -113,8 +114,8 @@ export function HeaderShell({ nav }: { nav: NavData }) {
                 aria-controls="mega-menu"
                 onClick={() => (megaOpen ? setMegaOpen(false) : openMega())}
                 className={cn(
-                  'u-label group relative px-3 py-3 text-[var(--text)] transition-colors',
-                  'hover:text-[var(--accent-hover)]',
+                  'u-label group relative px-3 py-3 text-fg transition-colors',
+                  'hover:text-accent-hover',
                 )}
               >
                 Tienda
@@ -126,7 +127,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
               <li key={category.slug} className="hidden lg:block">
                 <Link
                   href={`/tienda/${category.slug}`}
-                  className="u-label group relative px-3 py-3 transition-colors hover:text-[var(--accent-hover)]"
+                  className="u-label group relative px-3 py-3 transition-colors hover:text-accent-hover"
                 >
                   {category.name}
                   <Underline active={pathname === `/tienda/${category.slug}`} />
@@ -137,7 +138,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
             <li>
               <Link
                 href="/descubri"
-                className="u-label group relative px-3 py-3 transition-colors hover:text-[var(--accent-hover)]"
+                className="u-label group relative px-3 py-3 transition-colors hover:text-accent-hover"
               >
                 Descubrí
                 <Underline active={pathname.startsWith('/descubri')} />
@@ -157,7 +158,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
 
           <Link
             href="/cuenta"
-            className="hidden size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--text-dim)] transition-colors hover:text-[var(--text)] md:grid"
+            className="hidden size-11 place-items-center rounded-[var(--radius-sm)] text-fg-dim transition-colors hover:text-fg md:grid"
             aria-label="Mi cuenta"
           >
             <svg viewBox="0 0 20 20" className="size-[18px]" aria-hidden="true">
@@ -186,7 +187,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
             {loaded && itemCount > 0 ? (
               <span
                 aria-hidden="true"
-                className="u-mono absolute right-1.5 top-1.5 grid min-w-4 place-items-center rounded-full bg-[var(--accent)] px-1 text-[0.5625rem] font-semibold text-[var(--on-accent)]"
+                className="u-mono absolute right-1.5 top-1.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[0.5625rem] font-semibold text-on-accent"
               >
                 {itemCount}
               </span>
@@ -196,7 +197,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
-            className="grid size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--text-dim)] transition-colors hover:text-[var(--text)] md:hidden"
+            className="grid size-11 place-items-center rounded-[var(--radius-sm)] text-fg-dim transition-colors hover:text-fg md:hidden"
           >
             <span className="sr-only">Abrir menú</span>
             <svg viewBox="0 0 20 20" className="size-[18px]" aria-hidden="true">
@@ -212,7 +213,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
         hidden={!megaOpen}
         onPointerEnter={openMega}
         onPointerLeave={scheduleClose}
-        className="hidden border-t border-[var(--line)] bg-[var(--surface)] md:block"
+        className="hidden border-t border-line bg-surface md:block"
       >
         <div className="u-container grid gap-8 py-8 lg:grid-cols-[1.4fr_1fr] lg:gap-14">
           <div>
@@ -222,7 +223,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
                 <li key={category.slug}>
                   <Link
                     href={`/tienda/${category.slug}`}
-                    className="group/product flex items-center gap-3 rounded-[var(--radius-sm)] py-2.5 pr-2 transition-colors hover:bg-[var(--surface-raised)]"
+                    className="group/product flex items-center gap-3 rounded-[var(--radius-sm)] py-2.5 pr-2 transition-colors hover:bg-surface-raised"
                   >
                     <span className="relative grid size-12 flex-none place-items-center">
                       <ProductRender
@@ -233,10 +234,10 @@ export function HeaderShell({ nav }: { nav: NavData }) {
                       />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-[var(--text-step--1)] font-medium text-[var(--text)]">
+                      <span className="block text-tiny font-medium text-fg">
                         {category.name}
                       </span>
-                      <span className="u-mono block text-[var(--text-step--2)] text-[var(--text-faint)]">
+                      <span className="u-mono block text-micro text-fg-faint">
                         Desde {formatARS(category.fromTransfer)}
                       </span>
                     </span>
@@ -247,7 +248,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
 
             <Link
               href="/tienda"
-              className="u-label mt-5 inline-flex items-center gap-2 text-[var(--accent)] transition-colors hover:text-[var(--accent-hover)]"
+              className="u-label mt-4 inline-flex min-h-11 items-center gap-2 text-accent transition-colors hover:text-accent-hover"
             >
               Ver todo el catálogo
               <span aria-hidden="true">→</span>
@@ -261,7 +262,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
                 <li key={product.slug}>
                   <Link
                     href={`/producto/${product.slug}`}
-                    className="group/product flex items-center gap-4 rounded-[var(--radius-sm)] p-2.5 transition-colors hover:bg-[var(--surface-raised)]"
+                    className="group/product flex items-center gap-4 rounded-[var(--radius-sm)] p-2.5 transition-colors hover:bg-surface-raised"
                   >
                     <span className="relative grid size-14 flex-none place-items-center">
                       <ProductRender
@@ -273,14 +274,14 @@ export function HeaderShell({ nav }: { nav: NavData }) {
                       />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[var(--text-step--1)] font-medium">
+                      <span className="block truncate text-tiny font-medium">
                         {product.name}
                       </span>
-                      <span className="u-editorial block text-[var(--text-step--2)] text-[var(--text-dim)]">
+                      <span className="u-editorial block text-micro text-fg-dim">
                         {product.tagline}
                       </span>
                     </span>
-                    <span className="u-mono flex-none text-[var(--text-step--2)] text-[var(--text-dim)]">
+                    <span className="u-mono flex-none text-micro text-fg-dim">
                       {formatARS(product.fromTransfer)}
                     </span>
                   </Link>
@@ -300,7 +301,7 @@ function Underline({ active }: { active: boolean }) {
     <span
       aria-hidden="true"
       className={cn(
-        'absolute inset-x-3 bottom-1.5 h-px origin-center bg-[var(--accent)]',
+        'absolute inset-x-3 bottom-1.5 h-px origin-center bg-accent',
         'transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out-owner)]',
         active ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100',
       )}
@@ -321,7 +322,7 @@ function IconButton({
     <button
       type="button"
       onClick={onClick}
-      className="relative grid size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--text-dim)] transition-colors hover:text-[var(--text)]"
+      className="relative grid size-11 place-items-center rounded-[var(--radius-sm)] text-fg-dim transition-colors hover:text-fg"
     >
       <span className="sr-only">{label}</span>
       {children}

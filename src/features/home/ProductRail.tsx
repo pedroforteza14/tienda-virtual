@@ -110,7 +110,7 @@ export function ProductRail({ panels }: { panels: RailPanel[] }) {
                 'flex-none',
                 pinned
                   ? 'w-screen'
-                  : 'w-[min(88vw,34rem)] snap-center rounded-[var(--radius-lg)] border border-[var(--line)] p-6',
+                  : 'w-[min(88vw,34rem)] snap-center rounded-[var(--radius-lg)] border border-line p-6',
               )}
             >
               <Panel panel={panel} index={index} pinned={pinned} />
@@ -123,14 +123,14 @@ export function ProductRail({ panels }: { panels: RailPanel[] }) {
       {pinned ? (
         <div className="pointer-events-none sticky bottom-6 z-10 -mt-16">
           <div className="u-container flex items-center gap-3">
-            <span className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">01</span>
+            <span className="u-mono text-micro text-fg-faint">01</span>
             <span className="relative h-px flex-1 bg-[var(--line)]">
               <motion.span
-                className="absolute inset-y-0 left-0 bg-[var(--accent)]"
+                className="absolute inset-y-0 left-0 bg-accent"
                 style={{ width: progressWidth }}
               />
             </span>
-            <span className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">
+            <span className="u-mono text-micro text-fg-faint">
               {String(panels.length).padStart(2, '0')}
             </span>
           </div>
@@ -185,15 +185,15 @@ function Panel({
       {/* Copy */}
       <div className={cn(pinned && 'order-2 lg:order-1')}>
         <p className="u-label">
-          <span className="text-[var(--accent)]">{String(index + 1).padStart(2, '0')}</span> ·{' '}
+          <span className="text-accent">{String(index + 1).padStart(2, '0')}</span> ·{' '}
           {panel.eyebrow}
         </p>
 
-        <h3 className="u-display-tight mt-4 max-w-[18ch] text-[var(--text-step-4)]">
+        <h3 className="u-display-tight mt-4 max-w-[18ch] text-h2">
           {panel.accent ? (
             <>
               {panel.title.split(panel.accent)[0]}
-              <span className="u-editorial text-[var(--accent)]">{panel.accent}</span>
+              <span className="u-editorial text-accent">{panel.accent}</span>
               {panel.title.split(panel.accent)[1]}
             </>
           ) : (
@@ -201,14 +201,14 @@ function Panel({
           )}
         </h3>
 
-        <p className="u-prose mt-4 text-[var(--text-step-0)] text-[var(--text-dim)]">{panel.body}</p>
+        <p className="u-prose mt-4 text-body text-fg-dim">{panel.body}</p>
 
         {panel.specs ? <SpecRails specs={panel.specs} className="mt-6 max-w-xl" /> : null}
 
         {panel.price !== undefined ? (
-          <p className="u-mono mt-6 text-[var(--text-step-1)]">
+          <p className="u-mono mt-6 text-lead">
             Desde {formatARS(panel.price)}
-            <span className="ml-2 text-[var(--text-step--2)] text-[var(--text-faint)]">
+            <span className="ml-2 text-micro text-fg-faint">
               transferencia
             </span>
           </p>

@@ -1,3 +1,6 @@
+'use client';
+
+import { useId } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import { defsId, shade } from '@/components/product/shade';
@@ -27,6 +30,28 @@ import type { Colorway, RenderKind } from '@/types/catalog';
  *
  * ESCAPE HATCH: when a product carries real `photography`, that is used instead.
  * Dropping in a real shoot is a data change, not a code change.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY THIS IS A CLIENT COMPONENT (it has no state and no handlers)
+ * ---------------------------------------------------------------------------
+ * Purely to get `useId()`, and that is not fussiness.
+ *
+ * The gradients live in `<defs>` and are referenced as `url(#id)`. SVG resolves
+ * those **document-wide, first match wins**. An earlier version derived the id
+ * from a hash of (kind + colour), reasoning that a collision was harmless because
+ * two instances with the same inputs define identical gradients.
+ *
+ * That reasoning was wrong, and only a render showed it. The mega-menu renders
+ * the same device in the same colourway and sits behind `display: none` — so it
+ * held the *first* `#body-…` in the document, and every visible instance resolved
+ * its fill to a paint server inside a non-rendered tree. The result: the hero
+ * device drew its camera dots and nothing else, looking exactly like artwork that
+ * had failed to load.
+ *
+ * `useId()` gives a per-instance id that is stable across SSR and hydration, which
+ * a counter or a random value would not be. The component still server-renders, so
+ * the SVG is in the initial HTML and LCP is unaffected; the cost is a few kB of
+ * component code on routes that show products.
  */
 
 export interface ProductRenderProps {
@@ -50,9 +75,12 @@ export function ProductRender({
   specular = false,
   priority = false,
 }: ProductRenderProps) {
+  // Called unconditionally and before any early return: hooks are not optional.
+  const id = defsId(useId());
+
   if (photography) {
     return (
-      <div className={cn('relative', className)}>
+      <div className={cn('relative grid place-items-center', className)}>
         <Image
           src={photography.src}
           alt={photography.alt}
@@ -67,15 +95,27 @@ export function ProductRender({
     );
   }
 
-  const id = defsId([kind, color.hex, color.hexAccent, color.light]);
-
   return (
-    <div className={cn('relative', className)}>
+    /**
+     * `grid place-items-center` plus a height-driven SVG.
+     *
+     * The obvious `h-full w-full` on the `<svg>` does not work: a percentage
+     * height only resolves against a definite parent height, and when it does not
+     * the SVG silently falls back to its viewBox aspect ratio. On the home hero
+     * that rendered the device 1680px tall inside a 696px box — the body was drawn
+     * so far off-screen that only the dynamic island was visible, and the page
+     * looked like the artwork had failed to load.
+     *
+     * Sizing by height with `w-auto` makes the proportion come from the geometry
+     * in every case, and `max-w-full` caps the landscape devices (laptop, iMac) so
+     * they letterbox instead of overflowing.
+     */
+    <div className={cn('relative grid place-items-center', className)}>
       <svg
         viewBox={VIEWBOX[kind]}
         role="img"
         aria-label={`${productName} en ${color.name}`}
-        className="h-full w-full overflow-visible"
+        className="h-full max-h-full w-auto max-w-full"
         // The drawing is geometry, so it scales without ever resampling.
         preserveAspectRatio="xMidYMid meet"
       >
@@ -202,14 +242,15 @@ function phone({ id, pro }: DrawProps & { pro?: boolean }) {
       <rect x="36" y="200" width="4" height="56" rx="2" fill={`url(#rail-${id})`} />
       <rect x="254" y="186" width="4" height="72" rx="2" fill={`url(#rail-${id})`} />
 
-      {/* Pro gets the camera plateau peeking past the right edge — the one cue
-          that distinguishes the Pro silhouette at a glance. */}
+      {/* The Pro's camera plateau, just visible around the right edge — the one
+          cue that separates the Pro silhouette at a glance. Tucked against the
+          body: an earlier version sat half outside it and read as a stray tab. */}
       {pro ? (
-        <g opacity="0.9">
-          <rect x="246" y="44" width="22" height="82" rx="14" fill={`url(#rail-${id})`} />
-          <circle cx="257" cy="62" r="7" fill="#101114" />
-          <circle cx="257" cy="85" r="7" fill="#101114" />
-          <circle cx="257" cy="108" r="7" fill="#101114" />
+        <g opacity="0.92">
+          <rect x="243" y="48" width="16" height="74" rx="8" fill={`url(#rail-${id})`} />
+          <circle cx="251" cy="64" r="5.5" fill="#101114" />
+          <circle cx="251" cy="85" r="5.5" fill="#101114" />
+          <circle cx="251" cy="106" r="5.5" fill="#101114" />
         </g>
       ) : null}
 

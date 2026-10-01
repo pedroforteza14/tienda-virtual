@@ -16,11 +16,11 @@ export function Trust() {
       <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
         <Reveal>
           <p className="u-label">Cómo trabajamos</p>
-          <h2 id="trust-heading" className="u-display-tight mt-4 max-w-[16ch] text-[var(--text-step-4)]">
+          <h2 id="trust-heading" className="u-display-tight mt-4 max-w-[16ch] text-h2">
             Comprar acá tiene{' '}
-            <span className="u-editorial text-[var(--accent)]">respaldo</span>.
+            <span className="u-editorial text-accent">respaldo</span>.
           </h2>
-          <p className="u-prose mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">
+          <p className="u-prose mt-5 text-body text-fg-dim">
             No vendemos promesas: cada punto de abajo es verificable, y está por escrito en tu
             comprobante de compra.
           </p>

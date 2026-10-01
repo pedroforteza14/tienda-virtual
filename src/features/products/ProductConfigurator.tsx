@@ -120,7 +120,7 @@ export function ProductConfigurator({
     <div className="u-container grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
       {/* ------------------------------- STAGE ------------------------------- */}
       <div className="lg:sticky lg:top-[calc(var(--header-h)+2rem)] lg:self-start">
-        <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[var(--radius-xl)] bg-[var(--surface-raised)]">
+        <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[var(--radius-xl)] bg-surface-raised">
           <span
             aria-hidden="true"
             className="absolute aspect-square w-[58%] rounded-full border border-[color-mix(in_oklab,var(--accent)_32%,transparent)]"
@@ -147,11 +147,11 @@ export function ProductConfigurator({
             </motion.div>
           </AnimatePresence>
 
-          <p className="u-mono absolute bottom-4 left-5 text-[var(--text-step--2)] text-[var(--text-faint)]">
+          <p className="u-mono absolute bottom-4 left-5 text-micro text-fg-faint">
             {color.name}
           </p>
           {variant ? (
-            <p className="u-mono absolute bottom-4 right-5 text-[var(--text-step--2)] text-[var(--text-faint)]">
+            <p className="u-mono absolute bottom-4 right-5 text-micro text-fg-faint">
               {variant.sku}
             </p>
           ) : null}
@@ -161,9 +161,9 @@ export function ProductConfigurator({
           {highlights.map((highlight) => (
             <li
               key={highlight}
-              className="flex gap-3 text-[var(--text-step--1)] text-[var(--text-dim)]"
+              className="flex gap-3 text-tiny text-fg-dim"
             >
-              <span aria-hidden="true" className="mt-2 size-1 flex-none rounded-full bg-[var(--accent)]" />
+              <span aria-hidden="true" className="mt-2 size-1 flex-none rounded-full bg-accent" />
               {highlight}
             </li>
           ))}
@@ -184,7 +184,7 @@ export function ProductConfigurator({
               size="lg"
             />
           ) : (
-            <p className="u-mono text-[var(--text-step-1)] text-[var(--text-dim)]">
+            <p className="u-mono text-lead text-fg-dim">
               Combinación no disponible
             </p>
           )}
@@ -196,7 +196,7 @@ export function ProductConfigurator({
         {/* Colour */}
         <fieldset>
           <legend className="u-label mb-3">
-            Color — <span className="text-[var(--text)]">{color.name}</span>
+            Color — <span className="text-fg">{color.name}</span>
           </legend>
           <div className="flex flex-wrap gap-2.5">
             {colors.map((candidate) => {
@@ -208,8 +208,8 @@ export function ProductConfigurator({
                   className={cn(
                     'relative grid size-11 cursor-pointer place-items-center rounded-full border transition-colors',
                     selected
-                      ? 'border-[var(--accent)]'
-                      : 'border-[var(--line)] hover:border-[var(--line-strong)]',
+                      ? 'border-accent'
+                      : 'border-line hover:border-line-strong',
                   )}
                 >
                   <input
@@ -239,7 +239,7 @@ export function ProductConfigurator({
                   {stock === 0 ? (
                     <span
                       aria-hidden="true"
-                      className="absolute inset-0 grid place-items-center text-[var(--text-faint)]"
+                      className="absolute inset-0 grid place-items-center text-fg-faint"
                     >
                       <span className="h-px w-7 rotate-45 bg-current" />
                     </span>
@@ -267,8 +267,8 @@ export function ProductConfigurator({
                     className={cn(
                       'flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-sm)] border px-4 transition-colors',
                       selected
-                        ? 'border-[var(--accent)] bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]'
-                        : 'border-[var(--line)] hover:border-[var(--line-strong)]',
+                        ? 'border-accent bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]'
+                        : 'border-line hover:border-line-strong',
                     )}
                   >
                     <input
@@ -279,11 +279,11 @@ export function ProductConfigurator({
                       onChange={() => setTier(candidate)}
                       className="sr-only"
                     />
-                    <span className="u-mono text-[var(--text-step--1)]">{candidate}</span>
-                    <span className="u-mono text-right text-[var(--text-step--2)] text-[var(--text-dim)]">
+                    <span className="u-mono text-tiny">{candidate}</span>
+                    <span className="u-mono text-right text-micro text-fg-dim">
                       {option ? formatARS(option.transfer) : '—'}
                       {stock === 0 ? (
-                        <span className="block text-[var(--text-faint)]">sin stock</span>
+                        <span className="block text-fg-faint">sin stock</span>
                       ) : null}
                     </span>
                   </label>
@@ -294,7 +294,7 @@ export function ProductConfigurator({
         ) : null}
 
         {/* Quantity + buy */}
-        <div className="flex flex-col gap-4 border-t border-[var(--line)] pt-6">
+        <div className="flex flex-col gap-4 border-t border-line pt-6">
           <div className="flex items-center justify-between gap-4">
             <span className="u-label">Cantidad</span>
             <QuantityStepper
@@ -319,7 +319,7 @@ export function ProductConfigurator({
                 variant="ghost"
                 size="md"
                 block
-                className="border border-[var(--line)]"
+                className="border border-line"
               >
                 Avisame cuando llegue
               </ButtonLink>
@@ -353,14 +353,14 @@ export function ProductConfigurator({
             variant="ghost"
             size="md"
             block
-            className="border border-[var(--line)]"
+            className="border border-line"
           >
             Consultar por WhatsApp
           </ButtonLink>
         </div>
 
         {/* Commercial detail. Specific, because specific reads as true. */}
-        <dl className="u-mono flex flex-col gap-2.5 border-t border-[var(--line)] pt-6 text-[var(--text-step--1)]">
+        <dl className="u-mono flex flex-col gap-2.5 border-t border-line pt-6 text-tiny">
           <Fact label="Envío">
             Gratis en compras desde {formatARS(site.commerce.freeShippingThresholdPesos * 100)}. A
             todo el país, asegurado.
@@ -378,8 +378,8 @@ export function ProductConfigurator({
         {/* Mobile: the highlights the desktop column shows next to the render. */}
         <ul className="flex flex-col gap-2 lg:hidden">
           {highlights.map((highlight) => (
-            <li key={highlight} className="flex gap-3 text-[var(--text-step--1)] text-[var(--text-dim)]">
-              <span aria-hidden="true" className="mt-2 size-1 flex-none rounded-full bg-[var(--accent)]" />
+            <li key={highlight} className="flex gap-3 text-tiny text-fg-dim">
+              <span aria-hidden="true" className="mt-2 size-1 flex-none rounded-full bg-accent" />
               {highlight}
             </li>
           ))}
@@ -391,15 +391,15 @@ export function ProductConfigurator({
           is speed to purchase, so price and CTA stay reachable at all times. */}
       {variant && !soldOut ? (
         <div
-          className="fixed inset-x-0 bottom-14 z-30 border-t border-[var(--line)] bg-[color-mix(in_oklab,var(--surface)_94%,transparent)] px-4 py-3 backdrop-blur-xl md:hidden"
+          className="fixed inset-x-0 bottom-14 z-30 border-t border-line bg-[color-mix(in_oklab,var(--surface)_94%,transparent)] px-4 py-3 backdrop-blur-xl md:hidden"
           style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="u-mono truncate text-[var(--text-step--1)] font-semibold">
+              <p className="u-mono truncate text-tiny font-semibold">
                 {formatARS(variant.transfer)}
               </p>
-              <p className="u-mono truncate text-[0.5625rem] uppercase tracking-[0.12em] text-[var(--text-faint)]">
+              <p className="u-mono truncate text-[0.5625rem] uppercase tracking-[0.12em] text-fg-faint">
                 {color.name}
                 {tier ? ` · ${tier}` : ''}
               </p>
@@ -430,7 +430,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
       <dt className="u-label">{label}</dt>
-      <dd className="text-[var(--text-dim)]">{children}</dd>
+      <dd className="text-fg-dim">{children}</dd>
     </div>
   );
 }

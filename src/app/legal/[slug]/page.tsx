@@ -42,6 +42,21 @@ export async function generateMetadata({
  * flips the semantic token layer — no component knows or cares which surface it is
  * rendered on.
  */
+/**
+ * Dynamically rendered, for two reasons that happen to point the same way.
+ *
+ * 1. **Live stock.** This page shows availability. Prerendering it at build time
+ *    freezes stock until the next deploy, which is wrong in a way customers
+ *    notice only at checkout.
+ * 2. **The Content-Security-Policy nonce.** A per-request nonce cannot exist in a
+ *    file generated once at build time, so a prerendered page's script tags carry
+ *    no nonce and the strict CSP blocks every one of them. That is not a
+ *    hypothetical: it shipped, and the entire site was non-interactive in
+ *    production — no cart, no search, no configurator — while every build, lint
+ *    and type check passed. See docs/threat-model.md §4.5.
+ */
+export const dynamic = 'force-dynamic';
+
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = getLegalPage(slug);
@@ -50,28 +65,28 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
   return (
     <div
       data-surface="light"
-      className="min-h-dvh bg-[var(--surface)] pt-[calc(var(--header-h)+2rem)] text-[var(--text)]"
+      className="min-h-dvh bg-surface pt-[calc(var(--header-h)+2rem)] text-fg"
     >
       <div className="u-container u-section-tight max-w-3xl">
         <nav aria-label="Migas de pan">
-          <ol className="u-mono flex flex-wrap items-center gap-2 text-[var(--text-step--2)] text-[var(--text-faint)]">
+          <ol className="u-mono flex flex-wrap items-center gap-2 text-micro text-fg-faint">
             <li>
-              <Link href="/" className="transition-colors hover:text-[var(--text-dim)]">
+              <Link href="/" className="inline-block py-1.5 transition-colors hover:text-fg-dim">
                 Inicio
               </Link>
             </li>
             <li aria-hidden="true">/</li>
-            <li aria-current="page" className="text-[var(--text-dim)]">
+            <li aria-current="page" className="text-fg-dim">
               {page.title}
             </li>
           </ol>
         </nav>
 
-        <h1 className="u-display mt-6 text-[var(--text-step-4)]">{page.title}</h1>
-        <p className="u-prose mt-4 text-[var(--text-step-1)] text-[var(--text-dim)]">
+        <h1 className="u-display mt-6 text-h2">{page.title}</h1>
+        <p className="u-prose mt-4 text-lead text-fg-dim">
           {page.summary}
         </p>
-        <p className="u-mono mt-4 text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <p className="u-mono mt-4 text-micro text-fg-faint">
           Última actualización:{' '}
           <time dateTime={page.updated}>
             {new Date(page.updated).toLocaleDateString('es-AR', {
@@ -83,7 +98,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
         </p>
 
         {LEGAL_IS_DRAFT ? (
-          <p className="u-mono mt-8 rounded-[var(--radius-sm)] border border-[var(--line-strong)] p-4 text-[var(--text-step--2)] text-[var(--text-dim)]">
+          <p className="u-mono mt-8 rounded-[var(--radius-sm)] border border-line-strong p-4 text-micro text-fg-dim">
             Borrador de demostración. Este texto fue redactado como ejemplo y no tiene revisión
             legal. Antes de operar, un abogado debe validar el cumplimiento de la Ley 24.240 y la
             Ley 25.326.
@@ -95,13 +110,13 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
             <section key={section.heading} aria-labelledby={`section-${index}`}>
               <h2
                 id={`section-${index}`}
-                className="u-display-tight border-t border-[var(--line)] pt-5 text-[var(--text-step-2)]"
+                className="u-display-tight border-t border-line pt-5 text-h4"
               >
                 {section.heading}
               </h2>
               <div className="mt-4 flex flex-col gap-4">
                 {section.body.map((paragraph) => (
-                  <p key={paragraph} className="u-prose text-[var(--text-step-0)] text-[var(--text-dim)]">
+                  <p key={paragraph} className="u-prose text-body text-fg-dim">
                     {paragraph}
                   </p>
                 ))}
@@ -110,7 +125,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
           ))}
         </div>
 
-        <nav aria-label="Otras políticas" className="mt-16 border-t border-[var(--line)] pt-6">
+        <nav aria-label="Otras políticas" className="mt-16 border-t border-line pt-6">
           <p className="u-label">Otras políticas</p>
           <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
             {legalPages
@@ -119,7 +134,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
                 <li key={candidate.slug}>
                   <Link
                     href={`/legal/${candidate.slug}`}
-                    className="u-mono text-[var(--text-step--1)] text-[var(--accent)] underline"
+                    className="u-mono inline-block py-1.5 text-tiny text-accent underline"
                   >
                     {candidate.title}
                   </Link>

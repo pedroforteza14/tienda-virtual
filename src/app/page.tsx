@@ -35,6 +35,21 @@ export const metadata: Metadata = buildMetadata({
  * of static rendering. Only the four narrative components are client components;
  * everything else is server-rendered HTML.
  */
+/**
+ * Dynamically rendered, for two reasons that happen to point the same way.
+ *
+ * 1. **Live stock.** This page shows availability. Prerendering it at build time
+ *    freezes stock until the next deploy, which is wrong in a way customers
+ *    notice only at checkout.
+ * 2. **The Content-Security-Policy nonce.** A per-request nonce cannot exist in a
+ *    file generated once at build time, so a prerendered page's script tags carry
+ *    no nonce and the strict CSP blocks every one of them. That is not a
+ *    hypothetical: it shipped, and the entire site was non-interactive in
+ *    production — no cart, no search, no configurator — while every build, lint
+ *    and type check passed. See docs/threat-model.md §4.5.
+ */
+export const dynamic = 'force-dynamic';
+
 export default function HomePage() {
   const repo = catalog();
 

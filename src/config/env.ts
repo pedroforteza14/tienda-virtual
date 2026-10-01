@@ -44,6 +44,16 @@ type Env = z.infer<typeof schema> & {
   allowedOrigins: readonly string[];
   isProduction: boolean;
   isTest: boolean;
+  /**
+   * Whether we are actually served over a secure origin.
+   *
+   * This — not `NODE_ENV` — is what decides the `Secure` attribute and the
+   * `__Host-` cookie prefix. `NODE_ENV=production` says how the code was built;
+   * it says nothing about the transport. A production build smoke-tested on
+   * `http://127.0.0.1` would otherwise be issued `Secure; __Host-` cookies that
+   * the browser may refuse, and the session would silently never persist.
+   */
+  isSecureOrigin: boolean;
 };
 
 /**
@@ -96,7 +106,9 @@ function load(): Env {
   if (isProduction && isBuildPhase) {
     const missing = [
       !env.SESSION_SECRET && 'SESSION_SECRET',
-      !env.SITE_URL.startsWith('https://') && 'NEXT_PUBLIC_SITE_URL (must be https)',
+      !env.SITE_URL.startsWith('https://') &&
+        !isLoopback(env.SITE_URL) &&
+        'NEXT_PUBLIC_SITE_URL (must be https)',
     ].filter(Boolean);
     if (missing.length > 0) {
       console.warn(
@@ -113,8 +125,15 @@ function load(): Env {
           'node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"',
       );
     }
-    if (!env.SITE_URL.startsWith('https://')) {
-      throw new Error('NEXT_PUBLIC_SITE_URL must be an https:// origin in production');
+    // https is required for a real deployment, but a production build is also how
+    // you smoke-test and how the e2e suite runs — both on loopback over http, which
+    // browsers already treat as a trustworthy origin. Refusing those would push
+    // people toward testing a different build than they ship.
+    if (!env.SITE_URL.startsWith('https://') && !isLoopback(env.SITE_URL)) {
+      throw new Error(
+        'NEXT_PUBLIC_SITE_URL must be an https:// origin in production ' +
+          '(http is allowed only for localhost/127.0.0.1).',
+      );
     }
     if (env.PAYMENT_PROVIDER === 'mercadopago' && !env.MERCADOPAGO_WEBHOOK_SECRET) {
       throw new Error('MERCADOPAGO_WEBHOOK_SECRET is required: unverified webhooks are refused');
@@ -137,8 +156,19 @@ function load(): Env {
     SESSION_SECRET: env.SESSION_SECRET ?? DEV_SESSION_SECRET,
     isProduction,
     isTest: env.NODE_ENV === 'test',
+    isSecureOrigin: env.SITE_URL.startsWith('https://'),
     allowedOrigins: Object.freeze([new URL(env.SITE_URL).origin]),
   };
+}
+
+/** localhost, 127.0.0.0/8 or [::1] — origins browsers already treat as secure. */
+function isLoopback(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === 'localhost' || hostname === '[::1]' || /^127\./.test(hostname);
+  } catch {
+    return false;
+  }
 }
 
 let cached: Env | null = null;

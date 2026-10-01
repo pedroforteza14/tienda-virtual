@@ -37,6 +37,34 @@
   /* Deeper oxide for borders and fills only — 3.33:1, so never under text. */
   --color-signal-err-deep: #a8443a;
 
+  /**
+   * Semantic colours, registered in the `--color-*` namespace so Tailwind
+   * generates real utilities for them (`text-fg-dim`, `bg-surface-raised`,
+   * `border-line`).
+   *
+   * This is not sugar. Writing a colour as `text-[var(--text-dim)]` is ambiguous
+   * to both Tailwind (which guessed wrong and produced a *colour* where a font
+   * size was meant) and to `tailwind-merge` (which classified it as a font size
+   * and silently discarded the real one). `cn('text-tiny text-[var(--text-dim)]')`
+   * returned `'text-[var(--text-dim)]'` — the size was dropped, everywhere, and
+   * nothing failed. Typed utilities make both tools classify correctly.
+   *
+   * Each one points at the semantic alias rather than a raw value, so the light
+   * surface still flips everything by redefining the aliases alone.
+   */
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-fg: var(--text);
+  --color-fg-dim: var(--text-dim);
+  --color-fg-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-focus: var(--focus);
+
   /* ------------------------------------------------------------- typography */
   /* Faces are injected by next/font in layout.tsx, which self-hosts them at
      build time: no runtime request to a font CDN, and no CDN origin needed in
@@ -47,17 +75,26 @@
   --font-mono: var(--font-jetbrains), ui-monospace, 'SF Mono', monospace;
 
   /* Fluid scale. One `clamp()` per step, so a heading never needs a breakpoint. */
-  --text-step--2: clamp(0.6875rem, 0.66rem + 0.14vw, 0.75rem);
-  --text-step--1: clamp(0.8125rem, 0.78rem + 0.16vw, 0.875rem);
-  --text-step-0: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
-  --text-step-1: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
-  --text-step-2: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
-  --text-step-3: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
-  --text-step-4: clamp(2.25rem, 1.6rem + 2.9vw, 3.75rem);
-  --text-step-5: clamp(2.75rem, 1.5rem + 5.2vw, 5.5rem);
-  --text-step-6: clamp(3.25rem, 1rem + 8.5vw, 8rem);
-  /* The hero. Intentionally enormous, and the reason the width axis exists. */
-  --text-step-7: clamp(3.5rem, 0.5rem + 13vw, 11rem);
+  --text-micro: clamp(0.6875rem, 0.66rem + 0.14vw, 0.75rem);
+  --text-tiny: clamp(0.8125rem, 0.78rem + 0.16vw, 0.875rem);
+  --text-body: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
+  --text-lead: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
+  --text-h4: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  --text-h3: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+  --text-h2: clamp(2.25rem, 1.6rem + 2.9vw, 3.75rem);
+  --text-h1: clamp(2.75rem, 1.5rem + 5.2vw, 5.5rem);
+  --text-display: clamp(3.25rem, 1rem + 8.5vw, 8rem);
+  /**
+   * The hero.
+   *
+   * Tuned down from a 11rem maximum after looking at a render: at 176px
+   * "TECHNOLOGY" spanned the entire viewport, broke mid-word, and buried the
+   * product behind it — loud rather than premium, and the opposite of
+   * "product as hero". The ceiling is set so the longest word in the headline
+   * fits on one line inside the hero's left column at every supported width,
+   * which `tests/e2e/visual-qa.spec.ts` asserts.
+   */
+  --text-hero: clamp(2.5rem, 1rem + 5.2vw, 5.5rem);
 
   /* ----------------------------------------------------------------- space */
   --spacing: 0.25rem;

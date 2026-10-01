@@ -20,19 +20,19 @@ export function SeenInTheWild() {
   return (
     <section aria-labelledby="wild-heading" className="u-container u-section">
       <Reveal>
-        <div className="flex flex-wrap items-end justify-between gap-6 border-t border-[var(--line)] pt-6">
+        <div className="flex flex-wrap items-end justify-between gap-6 border-t border-line pt-6">
           <div>
             <p className="u-label">Nuestros clientes</p>
-            <h2 id="wild-heading" className="u-display mt-4 text-[var(--text-step-5)]">
+            <h2 id="wild-heading" className="u-display mt-4 text-h1">
               Seen in the
-              <span className="u-editorial ml-3 text-[var(--accent)] normal-case">wild</span>
+              <span className="u-editorial ml-3 text-accent normal-case">wild</span>
             </h2>
           </div>
           <a
             href={`https://www.instagram.com/${site.contact.instagram}/`}
             target="_blank"
             rel="noopener noreferrer"
-            className="u-label inline-flex items-center gap-2 text-[var(--accent)] transition-colors hover:text-[var(--accent-hover)]"
+            className="u-label inline-flex min-h-11 items-center gap-2 text-accent transition-colors hover:text-accent-hover"
           >
             @{site.contact.instagram}
             <span aria-hidden="true">↗</span>
@@ -47,10 +47,10 @@ export function SeenInTheWild() {
             key={entry.id}
             className={cn(entry.span === 2 && 'sm:col-span-2 lg:col-span-2')}
           >
-            <figure className="group/product flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)]">
+            <figure className="group/product flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface-raised">
               <div
                 className={cn(
-                  'relative grid place-items-center bg-[var(--surface-sunken)]',
+                  'relative grid place-items-center bg-surface-sunken',
                   entry.span === 2 ? 'aspect-16/9' : 'aspect-4/5',
                 )}
               >
@@ -68,14 +68,14 @@ export function SeenInTheWild() {
               </div>
 
               <figcaption className="flex flex-1 flex-col gap-3 p-5">
-                <p className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">
+                <p className="u-mono text-micro text-fg-faint">
                   {entry.city}
                 </p>
-                <p className="text-[var(--text-step-0)] text-[var(--text)]">{entry.caption}</p>
+                <p className="text-body text-fg">{entry.caption}</p>
 
                 {entry.quote ? (
-                  <blockquote className="mt-auto border-l border-[var(--accent)] pl-4">
-                    <p className="u-editorial text-[var(--text-step-1)] text-[var(--text)]">
+                  <blockquote className="mt-auto border-l border-accent pl-4">
+                    <p className="u-editorial text-lead text-fg">
                       “{entry.quote}”
                     </p>
                     <cite className="u-label mt-2 block not-italic">{entry.attribution}</cite>
@@ -88,7 +88,7 @@ export function SeenInTheWild() {
       </RevealGroup>
 
       {EDITORIAL_IS_MOCK ? (
-        <p className="u-mono mt-6 text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <p className="u-mono mt-6 text-micro text-fg-faint">
           Contenido de demostración: las fotos y los testimonios de esta sección son ejemplos
           escritos para el diseño, no reseñas reales de clientes.
         </p>

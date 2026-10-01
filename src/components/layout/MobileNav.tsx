@@ -36,7 +36,7 @@ export function MobileNav() {
     <>
       <nav
         aria-label="Navegación principal móvil"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[color-mix(in_oklab,var(--surface)_92%,transparent)] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-[color-mix(in_oklab,var(--surface)_92%,transparent)] backdrop-blur-xl md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <ul className="grid grid-cols-4">
@@ -74,7 +74,7 @@ export function MobileNav() {
                 {loaded && itemCount > 0 ? (
                   <span
                     aria-hidden="true"
-                    className="u-mono absolute -right-2 -top-1 grid min-w-3.5 place-items-center rounded-full bg-[var(--accent)] px-1 text-[0.5rem] font-semibold text-[var(--on-accent)]"
+                    className="u-mono absolute -right-2 -top-1 grid min-w-3.5 place-items-center rounded-full bg-accent px-1 text-[0.5rem] font-semibold text-on-accent"
                   >
                     {itemCount}
                   </span>
@@ -101,10 +101,10 @@ export function MobileNav() {
                 <Link
                   href={`/tienda/${family}`}
                   onClick={() => setMenuOpen(false)}
-                  className="u-display-tight flex items-baseline justify-between border-b border-[var(--line)] py-4 text-[var(--text-step-3)]"
+                  className="u-display-tight flex items-baseline justify-between border-b border-line py-4 text-h3"
                 >
                   {CATEGORY_LABELS[family] ?? family}
-                  <span aria-hidden="true" className="text-[var(--accent)] text-[var(--text-step-0)]">
+                  <span aria-hidden="true" className="text-accent text-body">
                     →
                   </span>
                 </Link>
@@ -122,7 +122,7 @@ export function MobileNav() {
                 <Link
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
-                  className="u-label block py-3 text-[var(--text-dim)]"
+                  className="u-label block py-3 text-fg-dim"
                 >
                   {item.label}
                 </Link>
@@ -139,7 +139,7 @@ function tabClass(active: boolean): string {
   return cn(
     // 56px tall: comfortably over the 44px minimum, with the label included.
     'u-mono flex h-14 w-full flex-col items-center justify-center gap-1 text-[0.5625rem] uppercase tracking-[0.1em] transition-colors',
-    active ? 'text-[var(--accent)]' : 'text-[var(--text-faint)]',
+    active ? 'text-accent' : 'text-fg-faint',
   );
 }
 

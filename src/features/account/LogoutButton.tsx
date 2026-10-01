@@ -21,7 +21,7 @@ export function LogoutButton() {
       variant="ghost"
       size="sm"
       loading={busy}
-      className="border border-[var(--line)]"
+      className="border border-line"
       onClick={async () => {
         setBusy(true);
         await apiFetch('/api/auth/logout', { method: 'POST' });

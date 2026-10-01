@@ -99,7 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${archivo.variable} ${instrument.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-dvh bg-[var(--surface)] text-[var(--text)] antialiased">
+      <body className="min-h-dvh bg-surface text-fg antialiased">
         {/* The first focusable element on every page. */}
         <a href="#main" className="skip-link">
           Saltar al contenido

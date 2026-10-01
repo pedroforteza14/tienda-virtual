@@ -78,8 +78,20 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /** Move focus to the step heading, so the change is announced. */
+  /**
+   * Move focus to the step heading when the step CHANGES — never on first render.
+   *
+   * Focusing it on mount hijacked focus on page load: the first Tab then went to
+   * whatever follows the heading, so the skip link became unreachable, which the
+   * accessibility sweep caught. Programmatic focus is for responding to a user's
+   * action, not for greeting them.
+   */
+  const firstRender = useRef(true);
   useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     headingRef.current?.focus();
   }, [step]);
 
@@ -114,7 +126,7 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
         </p>
         <span aria-hidden="true" className="relative h-px flex-1 bg-[var(--line)]">
           <span
-            className="absolute inset-y-0 left-0 bg-[var(--accent)] transition-[width] duration-[var(--dur-slow)] ease-[var(--ease-out-owner)]"
+            className="absolute inset-y-0 left-0 bg-accent transition-[width] duration-[var(--dur-slow)] ease-[var(--ease-out-owner)]"
             style={{ width: `${((step + 1) / 3) * 100}%` }}
           />
         </span>
@@ -136,13 +148,13 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
                 <h1
                   ref={headingRef}
                   tabIndex={-1}
-                  className="u-display max-w-[18ch] text-[var(--text-step-5)] outline-none"
+                  className="u-display max-w-[18ch] text-h1 outline-none"
                 >
                   What do you
-                  <span className="u-editorial ml-3 text-[var(--accent)] normal-case">need</span>?
+                  <span className="u-editorial ml-3 text-accent normal-case">need</span>?
                 </h1>
               </legend>
-              <p className="u-prose mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">
+              <p className="u-prose mt-5 text-body text-fg-dim">
                 Elegí lo que más se parezca a tu uso real. No hay respuesta incorrecta.
               </p>
 
@@ -182,13 +194,13 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
                 <h1
                   ref={headingRef}
                   tabIndex={-1}
-                  className="u-display max-w-[18ch] text-[var(--text-step-5)] outline-none"
+                  className="u-display max-w-[18ch] text-h1 outline-none"
                 >
                   ¿Hasta cuánto querés
-                  <span className="u-editorial ml-3 text-[var(--accent)] normal-case">gastar</span>?
+                  <span className="u-editorial ml-3 text-accent normal-case">gastar</span>?
                 </h1>
               </legend>
-              <p className="u-prose mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">
+              <p className="u-prose mt-5 text-body text-fg-dim">
                 Precios con transferencia. Siempre podés ver el resto después.
               </p>
 
@@ -211,7 +223,7 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
               </ul>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button variant="ghost" onClick={() => setStep(0)} className="border border-[var(--line)]">
+                <Button variant="ghost" onClick={() => setStep(0)} className="border border-line">
                   ← Volver
                 </Button>
                 {loading ? (
@@ -222,7 +234,7 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
               </div>
 
               {error ? (
-                <p role="status" className="u-mono mt-4 text-[var(--color-signal-err)]">
+                <p role="status" className="u-mono mt-4 text-signal-err">
                   {error}
                 </p>
               ) : null}
@@ -243,28 +255,28 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
             <h1
               ref={headingRef}
               tabIndex={-1}
-              className="u-display max-w-[20ch] text-[var(--text-step-5)] outline-none"
+              className="u-display max-w-[20ch] text-h1 outline-none"
             >
               Esto te
-              <span className="u-editorial ml-3 text-[var(--accent)] normal-case">serviría</span>.
+              <span className="u-editorial ml-3 text-accent normal-case">serviría</span>.
             </h1>
-            <p className="u-prose mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">
+            <p className="u-prose mt-5 text-body text-fg-dim">
               Para {useCase ? USE_CASE_COPY[useCase].title.toLowerCase() : 'tu uso'}, en orden de lo
               que más recomendamos. Si querés, lo repasamos por WhatsApp.
             </p>
 
             {results.length === 0 ? (
-              <p className="u-mono mt-10 text-[var(--text-dim)]">
+              <p className="u-mono mt-10 text-fg-dim">
                 No encontramos nada en ese rango. Probá ampliando el presupuesto.
               </p>
             ) : (
               <ol className="mt-10 flex flex-col gap-10">
                 {results.map((item, index) => (
                   <li key={item.slug}>
-                    <article className="group/product grid gap-6 border-t border-[var(--line)] pt-6 md:grid-cols-[14rem_minmax(0,1fr)] md:gap-10">
+                    <article className="group/product grid gap-6 border-t border-line pt-6 md:grid-cols-[14rem_minmax(0,1fr)] md:gap-10">
                       <Link
                         href={`/producto/${item.slug}`}
-                        className="relative grid aspect-square place-items-center rounded-[var(--radius-lg)] bg-[var(--surface-raised)]"
+                        className="relative grid aspect-square place-items-center rounded-[var(--radius-lg)] bg-surface-raised"
                       >
                         <span
                           aria-hidden="true"
@@ -281,18 +293,18 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
 
                       <div>
                         <p className="u-label">
-                          <span className="text-[var(--accent)]">
+                          <span className="text-accent">
                             {String(index + 1).padStart(2, '0')}
                           </span>{' '}
                           · {item.family}
                         </p>
-                        <h2 className="u-display-tight mt-3 text-[var(--text-step-3)]">
+                        <h2 className="u-display-tight mt-3 text-h3">
                           <Link href={`/producto/${item.slug}`}>{item.name}</Link>
                         </h2>
-                        <p className="u-editorial mt-1 text-[var(--text-step-1)] text-[var(--accent)]">
+                        <p className="u-editorial mt-1 text-lead text-accent">
                           {item.tagline}
                         </p>
-                        <p className="u-prose mt-3 text-[var(--text-step--1)] text-[var(--text-dim)]">
+                        <p className="u-prose mt-3 text-tiny text-fg-dim">
                           {item.summary}
                         </p>
 
@@ -300,11 +312,11 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
                           {item.highlights.map((highlight) => (
                             <li
                               key={highlight}
-                              className="flex gap-3 text-[var(--text-step--1)] text-[var(--text-dim)]"
+                              className="flex gap-3 text-tiny text-fg-dim"
                             >
                               <span
                                 aria-hidden="true"
-                                className="mt-2 size-1 flex-none rounded-full bg-[var(--accent)]"
+                                className="mt-2 size-1 flex-none rounded-full bg-accent"
                               />
                               {highlight}
                             </li>
@@ -313,10 +325,10 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
 
                         <div className="mt-5 flex flex-wrap items-end gap-6">
                           <p className="u-mono">
-                            <span className="block text-[var(--text-step-1)] font-semibold">
+                            <span className="block text-lead font-semibold">
                               {formatARS(item.fromTransfer)}
                             </span>
-                            <span className="block text-[var(--text-step--2)] text-[var(--accent)]">
+                            <span className="block text-micro text-accent">
                               {item.instalmentCount} × {formatARS(item.instalment)}
                             </span>
                           </p>
@@ -331,10 +343,10 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
               </ol>
             )}
 
-            <div className="mt-12 flex flex-wrap gap-3 border-t border-[var(--line)] pt-6">
+            <div className="mt-12 flex flex-wrap gap-3 border-t border-line pt-6">
               <Button
                 variant="ghost"
-                className="border border-[var(--line)]"
+                className="border border-line"
                 onClick={() => {
                   setResults(null);
                   setStep(0);
@@ -379,8 +391,8 @@ function OptionCard({
       className={cn(
         'group/option flex h-full cursor-pointer flex-col gap-5 rounded-[var(--radius-lg)] border p-6 transition-colors',
         checked
-          ? 'border-[var(--accent)] bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]'
-          : 'border-[var(--line)] hover:border-[var(--line-strong)]',
+          ? 'border-accent bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]'
+          : 'border-line hover:border-line-strong',
       )}
     >
       <input
@@ -395,21 +407,21 @@ function OptionCard({
         aria-hidden="true"
         className={cn(
           'grid size-9 place-items-center rounded-full border transition-colors',
-          checked ? 'border-[var(--accent)]' : 'border-[color-mix(in_oklab,var(--accent)_45%,transparent)]',
+          checked ? 'border-accent' : 'border-[color-mix(in_oklab,var(--accent)_45%,transparent)]',
         )}
       >
         <span
           className={cn(
-            'size-4 rounded-full bg-[var(--accent)] transition-transform duration-[var(--dur-base)] ease-[var(--ease-out-owner)]',
+            'size-4 rounded-full bg-accent transition-transform duration-[var(--dur-base)] ease-[var(--ease-out-owner)]',
             checked ? 'scale-100' : 'scale-0 group-hover/option:scale-50',
           )}
         />
       </span>
       <span>
-        <span className="u-display-tight block text-[var(--text-step-2)] text-[var(--text)]">
+        <span className="u-display-tight block text-h4 text-fg">
           {title}
         </span>
-        <span className="u-mono mt-1.5 block text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <span className="u-mono mt-1.5 block text-micro text-fg-faint">
           {blurb}
         </span>
       </span>

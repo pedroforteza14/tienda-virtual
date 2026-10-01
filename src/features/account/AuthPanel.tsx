@@ -95,8 +95,8 @@ export function AuthPanel() {
             className={cn(
               'u-label min-h-11 border-b-2 px-4 transition-colors',
               mode === candidate
-                ? 'border-[var(--accent)] text-[var(--text)]'
-                : 'border-transparent text-[var(--text-faint)] hover:text-[var(--text-dim)]',
+                ? 'border-accent text-fg'
+                : 'border-transparent text-fg-faint hover:text-fg-dim',
             )}
           >
             {candidate === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
@@ -153,10 +153,10 @@ export function AuthPanel() {
           <p
             role="status"
             className={cn(
-              'u-mono text-[var(--text-step--1)]',
+              'u-mono text-tiny',
               formMessage.tone === 'ok'
-                ? 'text-[var(--color-signal-ok)]'
-                : 'text-[var(--color-signal-err)]',
+                ? 'text-signal-ok'
+                : 'text-signal-err',
             )}
           >
             {formMessage.text}
@@ -168,7 +168,7 @@ export function AuthPanel() {
         </Button>
       </form>
 
-      <p className="u-mono mt-6 text-[var(--text-step--2)] text-[var(--text-faint)]">
+      <p className="u-mono mt-6 text-micro text-fg-faint">
         No necesitás cuenta para comprar. Sirve para ver tus pedidos anteriores.
       </p>
     </div>

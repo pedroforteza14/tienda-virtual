@@ -61,6 +61,21 @@ export async function generateMetadata({
  * Only the configurator is a client component. Specs, cross-sells, breadcrumbs and
  * structured data are all server-rendered.
  */
+/**
+ * Dynamically rendered, for two reasons that happen to point the same way.
+ *
+ * 1. **Live stock.** This page shows availability. Prerendering it at build time
+ *    freezes stock until the next deploy, which is wrong in a way customers
+ *    notice only at checkout.
+ * 2. **The Content-Security-Policy nonce.** A per-request nonce cannot exist in a
+ *    file generated once at build time, so a prerendered page's script tags carry
+ *    no nonce and the strict CSP blocks every one of them. That is not a
+ *    hypothetical: it shipped, and the entire site was non-interactive in
+ *    production — no cart, no search, no configurator — while every build, lint
+ *    and type check passed. See docs/threat-model.md §4.5.
+ */
+export const dynamic = 'force-dynamic';
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const product = catalog().getProductBySlug(slug);
@@ -110,15 +125,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         aria-label="Migas de pan"
         className="u-container relative pt-[calc(var(--header-h)+1.75rem)]"
       >
-        <ol className="u-mono flex flex-wrap items-center gap-2 text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <ol className="u-mono flex flex-wrap items-center gap-2 text-micro text-fg-faint">
           <li>
-            <Link href="/" className="transition-colors hover:text-[var(--text-dim)]">
+            <Link href="/" className="inline-block py-1.5 transition-colors hover:text-fg-dim">
               Inicio
             </Link>
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <Link href="/tienda" className="transition-colors hover:text-[var(--text-dim)]">
+            <Link href="/tienda" className="inline-block py-1.5 transition-colors hover:text-fg-dim">
               Catálogo
             </Link>
           </li>
@@ -128,7 +143,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <li>
                 <Link
                   href={`/tienda/${category.slug}`}
-                  className="transition-colors hover:text-[var(--text-dim)]"
+                  className="inline-block py-1.5 transition-colors hover:text-fg-dim"
                 >
                   {category.name}
                 </Link>
@@ -136,7 +151,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </>
           ) : null}
           <li aria-hidden="true">/</li>
-          <li aria-current="page" className="text-[var(--text-dim)]">
+          <li aria-current="page" className="text-fg-dim">
             {product.name}
           </li>
         </ol>
@@ -144,11 +159,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       <header className="u-container relative mt-8">
         <p className="u-label">{category?.name ?? product.family}</p>
-        <h1 className="u-display mt-3 max-w-[18ch] text-[var(--text-step-5)]">{product.name}</h1>
-        <p className="u-editorial mt-3 text-[var(--text-step-2)] text-[var(--accent)]">
+        <h1 className="u-display mt-3 max-w-[18ch] text-h1">{product.name}</h1>
+        <p className="u-editorial mt-3 text-h4 text-accent">
           {product.tagline}
         </p>
-        <p className="u-prose mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">
+        <p className="u-prose mt-5 text-body text-fg-dim">
           {product.summary}
         </p>
       </header>
@@ -174,10 +189,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       {/* --------------------------- SPECIFICATIONS -------------------------- */}
       <section aria-labelledby="specs-heading" className="u-container u-section">
         <Reveal>
-          <div className="border-t border-[var(--line)] pt-6">
+          <div className="border-t border-line pt-6">
             <p className="u-label">Ficha técnica</p>
-            <h2 id="specs-heading" className="u-display mt-4 text-[var(--text-step-4)]">
-              The <span className="u-editorial text-[var(--accent)] normal-case">numbers</span>.
+            <h2 id="specs-heading" className="u-display mt-4 text-h2">
+              The <span className="u-editorial text-accent normal-case">numbers</span>.
             </h2>
           </div>
         </Reveal>
@@ -190,7 +205,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       {pairs.length > 0 ? (
         <section aria-labelledby="pairs-heading" className="u-container u-section-tight">
           <Reveal>
-            <h2 id="pairs-heading" className="u-display-tight border-t border-[var(--line)] pt-6 text-[var(--text-step-3)]">
+            <h2 id="pairs-heading" className="u-display-tight border-t border-line pt-6 text-h3">
               Completá el equipo
             </h2>
           </Reveal>
@@ -208,7 +223,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       {related.length > 0 ? (
         <section aria-labelledby="related-heading" className="u-container u-section-tight">
           <Reveal>
-            <h2 id="related-heading" className="u-display-tight border-t border-[var(--line)] pt-6 text-[var(--text-step-3)]">
+            <h2 id="related-heading" className="u-display-tight border-t border-line pt-6 text-h3">
               Otros {category?.name ?? 'modelos'}
             </h2>
           </Reveal>
@@ -223,7 +238,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       ) : null}
 
       {PRICES_ARE_MOCK ? (
-        <p className="u-container u-mono pb-10 text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <p className="u-container u-mono pb-10 text-micro text-fg-faint">
           Los precios y el stock de esta página son de demostración.
         </p>
       ) : null}

@@ -31,22 +31,22 @@ const BASE =
 const VARIANTS: Record<ButtonVariant, string> = {
   // Brass. 6.28:1 against ink both ways.
   primary:
-    'on-accent bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)] ' +
+    'on-accent bg-accent text-on-accent hover:bg-accent-hover ' +
     'border border-transparent',
   secondary:
-    'border border-[var(--line-strong)] text-[var(--text)] hover:border-[var(--accent)] ' +
-    'hover:text-[var(--accent-hover)] bg-transparent',
-  ghost: 'text-[var(--text-dim)] hover:text-[var(--text)] bg-transparent border border-transparent',
+    'border border-line-strong text-fg hover:border-accent ' +
+    'hover:text-accent-hover bg-transparent',
+  ghost: 'text-fg-dim hover:text-fg bg-transparent border border-transparent',
   danger:
     'border border-[color-mix(in_oklab,var(--color-signal-err)_60%,transparent)] ' +
-    'text-[var(--color-signal-err)] hover:bg-[color-mix(in_oklab,var(--color-signal-err)_12%,transparent)]',
+    'text-signal-err hover:bg-[color-mix(in_oklab,var(--color-signal-err)_12%,transparent)]',
 };
 
 const SIZES: Record<ButtonSize, string> = {
   // 44px minimum touch target on every size, per docs/design-system.md.
-  sm: 'min-h-11 px-4 text-[var(--text-step--2)]',
-  md: 'min-h-12 px-6 text-[var(--text-step--1)]',
-  lg: 'min-h-14 px-8 text-[var(--text-step--1)]',
+  sm: 'min-h-11 px-4 text-micro',
+  md: 'min-h-12 px-6 text-tiny',
+  lg: 'min-h-14 px-8 text-tiny',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

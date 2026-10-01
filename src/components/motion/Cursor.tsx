@@ -60,7 +60,7 @@ export function Cursor() {
   return (
     <motion.div
       aria-hidden="true"
-      className="pointer-events-none fixed left-0 top-0 z-[90] hidden rounded-full border border-[var(--accent)] mix-blend-screen lg:block"
+      className="pointer-events-none fixed left-0 top-0 z-[90] hidden rounded-full border border-accent mix-blend-screen lg:block"
       style={{ x: springX, y: springY, translateX: '-50%', translateY: '-50%' }}
       animate={{
         width: hot ? 28 : 6,

@@ -43,8 +43,8 @@ export function CartDrawer() {
             aria-hidden="true"
             className="size-20 rounded-full border border-[color-mix(in_oklab,var(--accent)_40%,transparent)]"
           />
-          <p className="u-display-tight text-[var(--text-step-2)]">Todavía no elegiste nada</p>
-          <p className="u-prose text-[var(--text-step--1)] text-[var(--text-dim)]">
+          <p className="u-display-tight text-h4">Todavía no elegiste nada</p>
+          <p className="u-prose text-tiny text-fg-dim">
             Arrancá por el catálogo, o contanos qué necesitás y te lo recomendamos.
           </p>
           <div className="mt-2 flex flex-col gap-2 self-stretch">
@@ -58,13 +58,13 @@ export function CartDrawer() {
         </div>
       ) : (
         <>
-          <ul className="divide-y divide-[var(--line)]">
+          <ul className="divide-y divide-line">
             {cart.lines.map((line) => (
               <li key={line.sku} className="flex gap-4 px-5 py-4">
                 <Link
                   href={`/producto/${line.productSlug}`}
                   onClick={() => setCartOpen(false)}
-                  className="relative grid size-20 flex-none place-items-center rounded-[var(--radius-sm)] bg-[var(--surface-sunken)]"
+                  className="relative grid size-20 flex-none place-items-center rounded-[var(--radius-sm)] bg-surface-sunken"
                 >
                   <ProductRender
                     kind={line.render as RenderKind}
@@ -80,18 +80,18 @@ export function CartDrawer() {
                       <Link
                         href={`/producto/${line.productSlug}`}
                         onClick={() => setCartOpen(false)}
-                        className="block truncate text-[var(--text-step--1)] font-medium"
+                        className="block truncate text-tiny font-medium"
                       >
                         {line.productName}
                       </Link>
-                      <p className="u-mono text-[var(--text-step--2)] text-[var(--text-dim)]">
+                      <p className="u-mono text-micro text-fg-dim">
                         {[line.colorName, line.variantLabel].filter(Boolean).join(' · ')}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => void removeLine(line.sku)}
-                      className="u-mono -mr-1 px-2 py-1 text-[var(--text-step--2)] text-[var(--text-faint)] transition-colors hover:text-[var(--color-signal-err)]"
+                      className="u-mono -mr-1 px-2 py-1 text-micro text-fg-faint transition-colors hover:text-signal-err"
                     >
                       <span className="sr-only">Quitar {line.productName} del carrito</span>
                       <span aria-hidden="true">×</span>
@@ -106,7 +106,7 @@ export function CartDrawer() {
                       label={line.productName}
                       onChange={(next) => void setQty(line.sku, next)}
                     />
-                    <p className="u-mono text-[var(--text-step--1)] font-semibold">
+                    <p className="u-mono text-tiny font-semibold">
                       {formatARS(line.lineTotal)}
                     </p>
                   </div>
@@ -117,7 +117,7 @@ export function CartDrawer() {
 
           <CompleteYourSetup />
 
-          <div className="border-t border-[var(--line)] px-5 py-4">
+          <div className="border-t border-line px-5 py-4">
             <label htmlFor="promo" className="u-label">
               Código de descuento
             </label>
@@ -130,7 +130,7 @@ export function CartDrawer() {
                 placeholder="OWNER5"
                 autoComplete="off"
                 spellCheck={false}
-                className="u-mono min-h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-transparent px-3 text-[var(--text-step--1)] uppercase placeholder:text-[var(--text-faint)] focus:border-[var(--accent)]"
+                className="u-mono min-h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line-strong bg-transparent px-3 text-tiny uppercase placeholder:text-fg-faint focus:border-accent"
               />
               <Button
                 variant="secondary"
@@ -149,7 +149,7 @@ export function CartDrawer() {
               </Button>
             </div>
             {cart.promo ? (
-              <p className="u-mono mt-2 text-[var(--text-step--2)] text-[var(--color-signal-ok)]">
+              <p className="u-mono mt-2 text-micro text-signal-ok">
                 {cart.promo.label} aplicado
               </p>
             ) : null}
@@ -158,8 +158,8 @@ export function CartDrawer() {
       )}
 
       {!empty ? (
-        <div className="sticky bottom-0 border-t border-[var(--line)] bg-[var(--surface-raised)] px-5 py-4">
-          <dl className="u-mono flex flex-col gap-1.5 text-[var(--text-step--1)]">
+        <div className="sticky bottom-0 border-t border-line bg-surface-raised px-5 py-4">
+          <dl className="u-mono flex flex-col gap-1.5 text-tiny">
             <Row label="Subtotal" value={formatARS(cart.totals.subtotal)} />
             {cart.totals.promoDiscount > 0 ? (
               <Row
@@ -179,11 +179,11 @@ export function CartDrawer() {
               }
               muted
             />
-            <div className="mt-1.5 flex items-baseline justify-between border-t border-[var(--line)] pt-3">
-              <dt className="u-label normal-case tracking-[0.1em] text-[var(--text)]">
+            <div className="mt-1.5 flex items-baseline justify-between border-t border-line pt-3">
+              <dt className="u-label normal-case tracking-[0.1em] text-fg">
                 Total transferencia
               </dt>
-              <dd className="u-mono text-[var(--text-step-1)] font-semibold">
+              <dd className="u-mono text-lead font-semibold">
                 {formatARS(cart.totals.transferTotal)}
               </dd>
             </div>
@@ -207,7 +207,7 @@ export function CartDrawer() {
           </ButtonLink>
 
           {PRICES_ARE_MOCK ? (
-            <p className="u-mono mt-3 text-center text-[0.5625rem] uppercase tracking-[0.14em] text-[var(--text-faint)]">
+            <p className="u-mono mt-3 text-center text-[0.5625rem] uppercase tracking-[0.14em] text-fg-faint">
               Precios de demostración
             </p>
           ) : null}
@@ -230,14 +230,14 @@ function Row({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className={muted ? 'text-[var(--text-faint)]' : 'text-[var(--text-dim)]'}>{label}</dt>
+      <dt className={muted ? 'text-fg-faint' : 'text-fg-dim'}>{label}</dt>
       <dd
         className={
           tone === 'ok'
-            ? 'text-[var(--color-signal-ok)]'
+            ? 'text-signal-ok'
             : tone === 'brass'
-              ? 'text-[var(--accent)]'
-              : 'text-[var(--text)]'
+              ? 'text-accent'
+              : 'text-fg'
         }
       >
         {value}
@@ -280,7 +280,7 @@ function CompleteYourSetup() {
   }
 
   return (
-    <section aria-labelledby="setup-heading" className="border-t border-[var(--line)] px-5 py-4">
+    <section aria-labelledby="setup-heading" className="border-t border-line px-5 py-4">
       <h3 id="setup-heading" className="u-label">
         Completá tu setup
       </h3>
@@ -288,8 +288,8 @@ function CompleteYourSetup() {
         {suggestions.map((item) => (
           <li key={item.sku} className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[var(--text-step--1)]">{item.label}</p>
-              <p className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">
+              <p className="truncate text-tiny">{item.label}</p>
+              <p className="u-mono text-micro text-fg-faint">
                 {item.detail}
               </p>
             </div>
@@ -298,7 +298,7 @@ function CompleteYourSetup() {
               size="sm"
               onClick={() => void addToCart(item.sku, 1)}
               aria-label={`Agregar ${item.label} al carrito`}
-              className="flex-none border border-[var(--line)]"
+              className="flex-none border border-line"
             >
               + Agregar
             </Button>

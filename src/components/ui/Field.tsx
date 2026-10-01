@@ -20,11 +20,11 @@ import { cn } from '@/lib/utils/cn';
  */
 
 const CONTROL =
-  'w-full min-h-12 bg-transparent border border-[var(--line-strong)] rounded-[var(--radius-sm)] ' +
-  'px-3.5 py-2.5 text-[var(--text-step-0)] text-[var(--text)] placeholder:text-[var(--text-faint)] ' +
+  'w-full min-h-12 bg-transparent border border-line-strong rounded-[var(--radius-sm)] ' +
+  'px-3.5 py-2.5 text-body text-fg placeholder:text-fg-faint ' +
   'transition-[border-color,background-color] duration-[var(--dur-fast)] ' +
   'hover:border-[color-mix(in_oklab,var(--text)_35%,transparent)] ' +
-  'focus:border-[var(--accent)] ' +
+  'focus:border-accent ' +
   'aria-[invalid=true]:border-[var(--color-signal-err)] ' +
   'disabled:opacity-50 disabled:cursor-not-allowed';
 
@@ -58,11 +58,11 @@ export function FieldShell({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="u-label text-[var(--text-dim)]">
+      <label htmlFor={id} className="u-label text-fg-dim">
         {label}
         {required ? (
           <>
-            <span aria-hidden="true" className="text-[var(--accent)]">
+            <span aria-hidden="true" className="text-accent">
               {' '}
               *
             </span>
@@ -79,7 +79,7 @@ export function FieldShell({
       })}
 
       {hint && !error ? (
-        <p id={hintId} className="text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <p id={hintId} className="text-micro text-fg-faint">
           {hint}
         </p>
       ) : null}
@@ -88,7 +88,7 @@ export function FieldShell({
         <p
           id={errorId}
           role="status"
-          className="u-mono text-[var(--text-step--2)] text-[var(--color-signal-err)]"
+          className="u-mono text-micro text-signal-err"
         >
           {error}
         </p>
@@ -151,7 +151,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
           ref={ref}
           // A native select is kept on purpose: it gets the platform picker on
           // mobile, which is faster and more accessible than anything custom.
-          className={cn(CONTROL, 'appearance-none bg-[var(--surface-raised)] pr-10')}
+          className={cn(CONTROL, 'appearance-none bg-surface-raised pr-10')}
           {...aria}
           {...rest}
         >

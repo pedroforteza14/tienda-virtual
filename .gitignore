@@ -34,3 +34,7 @@ yarn-error.log*
 .vercel
 .idea
 .vscode
+
+# Visual-QA captures are build output, not source. Regenerate with:
+#   npx playwright test tests/e2e/visual-qa.spec.ts --project=desktop
+/tests/e2e/__screenshots__

@@ -94,7 +94,7 @@ export function SearchOverlay() {
       className="rounded-b-[var(--radius-lg)]"
     >
       <div className="u-container py-6">
-        <div className="relative border-b border-[var(--line-strong)] pb-3 focus-within:border-[var(--accent)]">
+        <div className="relative border-b border-line-strong pb-3 focus-within:border-accent">
           <input
             ref={inputRef}
             type="search"
@@ -125,12 +125,12 @@ export function SearchOverlay() {
                 }
               }
             }}
-            className="u-display-tight w-full border-0 bg-transparent pr-10 text-[var(--text-step-3)] text-[var(--text)] placeholder:text-[var(--text-faint)] focus:outline-none"
+            className="u-display-tight w-full border-0 bg-transparent pr-10 text-h3 text-fg placeholder:text-fg-faint focus:outline-none"
           />
           <span
             aria-hidden="true"
             className={cn(
-              'absolute right-0 top-2 size-4 rounded-full border border-[var(--accent)] transition-opacity',
+              'absolute right-0 top-2 size-4 rounded-full border border-accent transition-opacity',
               status === 'loading' ? 'animate-pulse opacity-100' : 'opacity-25',
             )}
           />
@@ -163,8 +163,8 @@ export function SearchOverlay() {
                   onClick={() => open(result.slug)}
                   onPointerEnter={() => setActive(index)}
                   className={cn(
-                    'group/product flex w-full items-center gap-4 border-t border-[var(--line)] px-2 py-3 text-left transition-colors',
-                    index === active && 'bg-[var(--surface-raised)]',
+                    'group/product flex w-full items-center gap-4 border-t border-line px-2 py-3 text-left transition-colors',
+                    index === active && 'bg-surface-raised',
                   )}
                 >
                   <span className="relative grid size-14 flex-none place-items-center">
@@ -176,16 +176,16 @@ export function SearchOverlay() {
                     />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[var(--text-step-0)] font-medium">
+                    <span className="block truncate text-body font-medium">
                       {result.name}
                     </span>
                     <span className="u-label block normal-case tracking-[0.1em]">
                       {result.family} · {result.inStock ? 'En stock' : 'Sin stock'}
                     </span>
                   </span>
-                  <span className="u-mono flex-none text-right text-[var(--text-step--1)]">
+                  <span className="u-mono flex-none text-right text-tiny">
                     {formatARS(result.fromTransfer)}
-                    <span className="block text-[var(--text-step--2)] text-[var(--text-faint)]">
+                    <span className="block text-micro text-fg-faint">
                       transferencia
                     </span>
                   </span>
@@ -196,13 +196,13 @@ export function SearchOverlay() {
         ) : null}
 
         {status === 'done' && results.length === 0 ? (
-          <div className="mt-6 border-t border-[var(--line)] pt-6">
-            <p className="text-[var(--text-step-0)] text-[var(--text-dim)]">
+          <div className="mt-6 border-t border-line pt-6">
+            <p className="text-body text-fg-dim">
               No encontramos nada para{' '}
               {/* Rendered as a text node by React, never as markup. */}
-              <span className="u-mono text-[var(--text)]">{query}</span>.
+              <span className="u-mono text-fg">{query}</span>.
             </p>
-            <p className="u-prose mt-2 text-[var(--text-step--1)] text-[var(--text-faint)]">
+            <p className="u-prose mt-2 text-tiny text-fg-faint">
               Probá con el modelo (iPhone 17, MacBook Air) o escribinos y lo buscamos.
             </p>
           </div>
@@ -221,7 +221,7 @@ export function SearchOverlay() {
                         setQuery(term);
                         inputRef.current?.focus();
                       }}
-                      className="u-mono rounded-[var(--radius-sm)] border border-[var(--line)] px-3 py-2 text-[var(--text-step--2)] text-[var(--text-dim)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text)]"
+                      className="u-mono rounded-[var(--radius-sm)] border border-line px-3 py-2 text-micro text-fg-dim transition-colors hover:border-accent hover:text-fg"
                     >
                       {term}
                     </button>

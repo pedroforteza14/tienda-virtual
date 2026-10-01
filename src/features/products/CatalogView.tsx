@@ -69,8 +69,8 @@ export function CatalogView({
 
       <header className="u-container relative pt-[calc(var(--header-h)+clamp(2.5rem,7vh,4.5rem))]">
         <p className="u-label">{family ? 'Categoría' : 'Catálogo completo'}</p>
-        <h1 className="u-display mt-4 max-w-[16ch] text-[var(--text-step-5)]">{heading}</h1>
-        <p className="u-prose mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">{intro}</p>
+        <h1 className="u-display mt-4 max-w-[16ch] text-h1">{heading}</h1>
+        <p className="u-prose mt-5 text-body text-fg-dim">{intro}</p>
       </header>
 
       <div className="u-container mt-12">
@@ -82,11 +82,23 @@ export function CatalogView({
         />
       </div>
 
-      <div className="u-container u-section-tight">
+      <section aria-labelledby="results-heading" className="u-container u-section-tight">
+        {/*
+          A real heading, visually hidden.
+
+          Product cards use `<h3>`, which is correct when they sit under a section
+          heading — but on the listing the only heading above them was the page
+          `<h1>`, so the document went h1 → h3 and screen-reader users lost a level
+          of structure. The accessibility sweep caught it as a heading jump.
+        */}
+        <h2 id="results-heading" className="sr-only">
+          Productos
+        </h2>
+
         {items.length === 0 ? (
-          <div className="border-t border-[var(--line)] py-20 text-center">
-            <p className="u-display-tight text-[var(--text-step-2)]">Sin resultados</p>
-            <p className="u-prose mx-auto mt-3 text-[var(--text-step--1)] text-[var(--text-dim)]">
+          <div className="border-t border-line py-20 text-center">
+            <p className="u-display-tight text-h4">Sin resultados</p>
+            <p className="u-prose mx-auto mt-3 text-tiny text-fg-dim">
               Probá ampliando el rango de precio o quitando algún filtro.
             </p>
             <ButtonLink href={basePath} variant="secondary" size="md" className="mt-6">
@@ -108,7 +120,7 @@ export function CatalogView({
         )}
 
         {pages > 1 ? (
-          <nav aria-label="Paginación" className="mt-16 flex items-center justify-between border-t border-[var(--line)] pt-6">
+          <nav aria-label="Paginación" className="mt-16 flex items-center justify-between border-t border-line pt-6">
             <PageLink
               basePath={basePath}
               query={query}
@@ -118,7 +130,7 @@ export function CatalogView({
               ← Anterior
             </PageLink>
 
-            <p className="u-mono text-[var(--text-step--2)] text-[var(--text-dim)]">
+            <p className="u-mono text-micro text-fg-dim">
               Página {query.page} de {pages}
             </p>
 
@@ -132,7 +144,7 @@ export function CatalogView({
             </PageLink>
           </nav>
         ) : null}
-      </div>
+      </section>
     </div>
   );
 }
@@ -191,7 +203,7 @@ function PageLink({
     return (
       <span
         aria-disabled="true"
-        className="u-mono grid min-h-11 place-items-center px-4 text-[var(--text-step--2)] uppercase tracking-[0.12em] text-[var(--text-faint)]"
+        className="u-mono grid min-h-11 place-items-center px-4 text-micro uppercase tracking-[0.12em] text-fg-faint"
       >
         {children}
       </span>
@@ -214,7 +226,7 @@ function PageLink({
   return (
     <Link
       href={search ? `${basePath}?${search}` : basePath}
-      className="u-mono grid min-h-11 place-items-center rounded-[var(--radius-sm)] border border-[var(--line)] px-4 text-[var(--text-step--2)] uppercase tracking-[0.12em] text-[var(--text-dim)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text)]"
+      className="u-mono grid min-h-11 place-items-center rounded-[var(--radius-sm)] border border-line px-4 text-micro uppercase tracking-[0.12em] text-fg-dim transition-colors hover:border-accent hover:text-fg"
     >
       {children}
     </Link>

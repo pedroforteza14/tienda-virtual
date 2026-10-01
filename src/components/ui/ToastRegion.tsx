@@ -5,9 +5,9 @@ import { useCommerce } from '@/features/cart/CommerceProvider';
 import { cn } from '@/lib/utils/cn';
 
 const TONES = {
-  info: 'border-[var(--line-strong)] text-[var(--text)]',
-  ok: 'border-[color-mix(in_oklab,var(--color-signal-ok)_55%,transparent)] text-[var(--color-signal-ok)]',
-  err: 'border-[color-mix(in_oklab,var(--color-signal-err)_55%,transparent)] text-[var(--color-signal-err)]',
+  info: 'border-line-strong text-fg',
+  ok: 'border-[color-mix(in_oklab,var(--color-signal-ok)_55%,transparent)] text-signal-ok',
+  err: 'border-[color-mix(in_oklab,var(--color-signal-err)_55%,transparent)] text-signal-err',
 } as const;
 
 /**
@@ -40,7 +40,7 @@ export function ToastRegion() {
             transition={{ duration: reduced ? 0 : 0.3, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
               'pointer-events-auto flex max-w-[min(32rem,100%)] items-start gap-3 rounded-[var(--radius-sm)]',
-              'border bg-[var(--surface-raised)] px-4 py-3 text-[var(--text-step--1)]',
+              'border bg-surface-raised px-4 py-3 text-tiny',
               TONES[item.tone],
             )}
           >
@@ -48,7 +48,7 @@ export function ToastRegion() {
             <button
               type="button"
               onClick={() => dismissToast(item.id)}
-              className="u-mono -my-1 -mr-1 px-2 py-1 text-[var(--text-step--2)] text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
+              className="u-mono -my-1 -mr-1 px-2 py-1 text-micro text-fg-faint transition-colors hover:text-fg"
             >
               <span className="sr-only">Descartar aviso</span>
               <span aria-hidden="true">×</span>

@@ -28,9 +28,9 @@ export interface PriceBlockProps {
 }
 
 const SIZES = {
-  sm: { main: 'text-[var(--text-step-1)]', sub: 'text-[var(--text-step--2)]' },
-  md: { main: 'text-[var(--text-step-2)]', sub: 'text-[var(--text-step--1)]' },
-  lg: { main: 'text-[var(--text-step-3)]', sub: 'text-[var(--text-step--1)]' },
+  sm: { main: 'text-lead', sub: 'text-micro' },
+  md: { main: 'text-h4', sub: 'text-tiny' },
+  lg: { main: 'text-h3', sub: 'text-tiny' },
 } as const;
 
 export function PriceBlock({
@@ -45,7 +45,7 @@ export function PriceBlock({
 
   return (
     <div className={cn('flex flex-col gap-1', className)}>
-      <p className={cn('u-mono font-semibold leading-none text-[var(--text)]', scale.main)}>
+      <p className={cn('u-mono font-semibold leading-none text-fg', scale.main)}>
         <span aria-hidden="true">{formatARS(transfer)}</span>
         <span className="sr-only">
           Precio con transferencia: {describeARS(transfer)}
@@ -56,13 +56,13 @@ export function PriceBlock({
         Precio transferencia · {site.commerce.transferDiscountPercent}% off
       </p>
 
-      <p className={cn('u-mono mt-1 text-[var(--text-dim)]', scale.sub)}>
+      <p className={cn('u-mono mt-1 text-fg-dim', scale.sub)}>
         <span aria-hidden="true">{formatARS(list)}</span>
         <span className="sr-only">Precio de lista: {describeARS(list)}.</span>{' '}
-        <span className="text-[var(--text-faint)]">con tarjeta</span>
+        <span className="text-fg-faint">con tarjeta</span>
       </p>
 
-      <p className={cn('u-mono text-[var(--accent)]', scale.sub)}>
+      <p className={cn('u-mono text-accent', scale.sub)}>
         {instalmentCount} cuotas sin interés de <span aria-hidden="true">{formatARS(instalment)}</span>
         <span className="sr-only">{describeARS(instalment)}</span>
       </p>
@@ -82,14 +82,14 @@ export function FromPrice({
 }) {
   return (
     <p className={cn('u-mono flex flex-wrap items-baseline gap-x-2', className)}>
-      <span className="text-[var(--text-faint)] text-[var(--text-step--2)] uppercase tracking-[0.14em]">
+      <span className="text-fg-faint text-micro uppercase tracking-[0.14em]">
         Desde
       </span>
-      <span className="font-semibold text-[var(--text)] text-[var(--text-step-1)]" aria-hidden="true">
+      <span className="font-semibold text-fg text-lead" aria-hidden="true">
         {formatARS(fromTransfer)}
       </span>
       <span className="sr-only">Desde {describeARS(fromTransfer)} con transferencia.</span>
-      <span className="text-[var(--text-faint)] text-[var(--text-step--2)]" aria-hidden="true">
+      <span className="text-fg-faint text-micro" aria-hidden="true">
         {formatARS(from)} con tarjeta
       </span>
     </p>

@@ -83,28 +83,28 @@ export default async function OrderPage({
     <div
       // Light surface: this page gets printed and forwarded.
       data-surface="light"
-      className="min-h-dvh bg-[var(--surface)] pt-[calc(var(--header-h)+2rem)] text-[var(--text)]"
+      className="min-h-dvh bg-surface pt-[calc(var(--header-h)+2rem)] text-fg"
     >
       <div className="u-container u-section-tight max-w-4xl">
         <p className="u-label">Pedido confirmado</p>
 
-        <h1 className="u-display mt-4 text-[var(--text-step-4)]">
+        <h1 className="u-display mt-4 text-h2">
           Gracias, {order.customer.name.split(' ')[0]}.
         </h1>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <p className="u-mono text-[var(--text-step-1)]">{order.reference}</p>
+          <p className="u-mono text-lead">{order.reference}</p>
           <Badge tone={status.tone}>{status.label}</Badge>
         </div>
 
-        <p className="u-prose mt-4 text-[var(--text-step-0)] text-[var(--text-dim)]">
+        <p className="u-prose mt-4 text-body text-fg-dim">
           {status.detail}
         </p>
 
         {order.status === 'pending_payment' && order.paymentMethod === 'transfer' ? (
           <section
             aria-labelledby="transfer-heading"
-            className="mt-10 rounded-[var(--radius-lg)] border border-[var(--line-strong)] p-6"
+            className="mt-10 rounded-[var(--radius-lg)] border border-line-strong p-6"
           >
             <h2 id="transfer-heading" className="u-label">
               Datos para transferir
@@ -119,11 +119,11 @@ export default async function OrderPage({
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="u-label">{label}</dt>
-                  <dd className="mt-1 text-[var(--text-step-0)]">{value}</dd>
+                  <dd className="mt-1 text-body">{value}</dd>
                 </div>
               ))}
             </dl>
-            <p className="u-mono mt-5 text-[var(--text-step--2)] text-[var(--text-faint)]">
+            <p className="u-mono mt-5 text-micro text-fg-faint">
               Mandanos el comprobante por WhatsApp citando la referencia y lo acreditamos en el día.
               {PRICES_ARE_MOCK ? ' Estos datos bancarios son de demostración.' : ''}
             </p>
@@ -135,10 +135,10 @@ export default async function OrderPage({
           <h2 id="items-heading" className="u-label">
             Tu equipo
           </h2>
-          <ul className="mt-4 divide-y divide-[var(--line)] border-y border-[var(--line)]">
+          <ul className="mt-4 divide-y divide-line border-y border-line">
             {order.lines.map((line) => (
               <li key={line.sku} className="flex items-center gap-4 py-4">
-                <span className="relative grid size-16 flex-none place-items-center rounded-[var(--radius-sm)] bg-[var(--surface-sunken)]">
+                <span className="relative grid size-16 flex-none place-items-center rounded-[var(--radius-sm)] bg-surface-sunken">
                   <ProductRender
                     kind={line.render as RenderKind}
                     color={{ hex: line.colorHex, hexAccent: line.colorHex, name: line.colorName }}
@@ -147,12 +147,12 @@ export default async function OrderPage({
                   />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[var(--text-step-0)]">{line.productName}</p>
-                  <p className="u-mono text-[var(--text-step--2)] text-[var(--text-dim)]">
+                  <p className="text-body">{line.productName}</p>
+                  <p className="u-mono text-micro text-fg-dim">
                     {[line.colorName, line.variantLabel].filter(Boolean).join(' · ')} · ×{line.qty}
                   </p>
                 </div>
-                <p className="u-mono flex-none text-[var(--text-step-0)]">
+                <p className="u-mono flex-none text-body">
                   {formatARS(line.lineTotal)}
                 </p>
               </li>
@@ -161,7 +161,7 @@ export default async function OrderPage({
         </section>
 
         {/* Totals — the server's snapshot, shown exactly as stored. */}
-        <dl className="u-mono mt-6 flex flex-col gap-2 text-[var(--text-step--1)]">
+        <dl className="u-mono mt-6 flex flex-col gap-2 text-tiny">
           <Row label="Subtotal" value={formatARS(order.totals.subtotal)} />
           {order.totals.promoDiscount > 0 ? (
             <Row label="Descuento" value={`− ${formatARS(order.totals.promoDiscount)}`} />
@@ -176,9 +176,9 @@ export default async function OrderPage({
               value={`− ${formatARS(order.totals.transferDiscount)}`}
             />
           ) : null}
-          <div className="mt-2 flex items-baseline justify-between border-t border-[var(--line)] pt-3">
-            <dt className="u-label normal-case tracking-[0.1em] text-[var(--text)]">Total</dt>
-            <dd className="u-mono text-[var(--text-step-2)] font-semibold">{formatARS(payable)}</dd>
+          <div className="mt-2 flex items-baseline justify-between border-t border-line pt-3">
+            <dt className="u-label normal-case tracking-[0.1em] text-fg">Total</dt>
+            <dd className="u-mono text-h4 font-semibold">{formatARS(payable)}</dd>
           </div>
         </dl>
 
@@ -187,7 +187,7 @@ export default async function OrderPage({
           <h2 id="delivery-heading" className="u-label">
             Entrega
           </h2>
-          <p className="mt-3 text-[var(--text-step--1)] text-[var(--text-dim)]">
+          <p className="mt-3 text-tiny text-fg-dim">
             {order.shipping.zone === 'pickup' ? (
               site.store.pickupNote
             ) : (
@@ -200,7 +200,7 @@ export default async function OrderPage({
             {order.shipping.notes ? (
               <>
                 <br />
-                <span className="text-[var(--text-faint)]">{order.shipping.notes}</span>
+                <span className="text-fg-faint">{order.shipping.notes}</span>
               </>
             ) : null}
           </p>
@@ -221,10 +221,10 @@ export default async function OrderPage({
           </ButtonLink>
         </div>
 
-        <p className="u-mono mt-10 text-[var(--text-step--2)] text-[var(--text-faint)]" data-print="hide">
-          Guardá esta referencia: <span className="text-[var(--text-dim)]">{order.reference}</span>.
+        <p className="u-mono mt-10 text-micro text-fg-faint" data-print="hide">
+          Guardá esta referencia: <span className="text-fg-dim">{order.reference}</span>.
           Podés volver a esta página desde{' '}
-          <Link href="/cuenta" className="underline">
+          <Link href="/cuenta" className="inline-block py-1 underline">
             tu cuenta
           </Link>
           .
@@ -237,7 +237,7 @@ export default async function OrderPage({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-[var(--text-dim)]">{label}</dt>
+      <dt className="text-fg-dim">{label}</dt>
       <dd>{value}</dd>
     </div>
   );

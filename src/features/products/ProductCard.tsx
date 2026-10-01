@@ -39,7 +39,7 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        'group/product relative flex flex-col border-t border-[var(--line)] pt-5',
+        'group/product relative flex flex-col border-t border-line pt-5',
         className,
       )}
     >
@@ -76,10 +76,10 @@ export function ProductCard({
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="u-display-tight text-[var(--text-step-1)] text-[var(--text)]">
+            <h3 className="u-display-tight text-lead text-fg">
               {product.name}
             </h3>
-            <p className="u-editorial mt-0.5 text-[var(--text-step--1)] text-[var(--text-dim)]">
+            <p className="u-editorial mt-0.5 text-tiny text-fg-dim">
               {product.tagline}
             </p>
           </div>
@@ -88,7 +88,7 @@ export function ProductCard({
 
         <FromPrice from={product.from} fromTransfer={product.fromTransfer} className="mt-4" />
 
-        <p className="u-mono mt-1.5 text-[var(--text-step--2)] text-[var(--accent)]">
+        <p className="u-mono mt-1.5 text-micro text-accent">
           {product.instalmentCount} cuotas sin interés
         </p>
 
@@ -103,7 +103,7 @@ export function ProductCard({
       {product.quickAddSku ? (
         <QuickAdd sku={product.quickAddSku} productName={product.name} className="mt-4" />
       ) : (
-        <p className="u-label mt-4 text-[var(--text-faint)]">Avisanos y te escribimos</p>
+        <p className="u-label mt-4 text-fg-faint">Avisanos y te escribimos</p>
       )}
     </article>
   );

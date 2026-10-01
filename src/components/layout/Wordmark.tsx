@@ -16,7 +16,7 @@ export function Wordmark({ className, small = false }: { className?: string; sma
       <span
         aria-hidden="true"
         className={cn(
-          'inline-block flex-none rounded-full border border-[var(--accent)]',
+          'inline-block flex-none rounded-full border border-accent',
           small ? 'size-2' : 'size-2.5',
         )}
       />

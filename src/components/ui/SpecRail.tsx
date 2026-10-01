@@ -33,11 +33,11 @@ export function SpecRails({
             } as React.CSSProperties
           }
         >
-          <span aria-hidden="true" className="u-mono text-[var(--text-step--2)] text-[var(--accent)]">
+          <span aria-hidden="true" className="u-mono text-micro text-accent">
             {spec.index}
           </span>
-          <dt className="u-label text-[var(--text-dim)]">{spec.label}</dt>
-          <dd className="u-mono text-[var(--text-step--1)] text-[var(--text)] md:col-start-3">
+          <dt className="u-label text-fg-dim">{spec.label}</dt>
+          <dd className="u-mono text-tiny text-fg md:col-start-3">
             {spec.value}
           </dd>
         </div>

@@ -121,7 +121,11 @@ Non-negotiable, and verified in `tests/e2e/accessibility.spec.ts`:
 - Keyboard reaches every interactive thing; dialogs trap and restore focus; `Escape` closes.
 - Search overlay: `↑`/`↓` move through results, `Enter` opens, `Escape` closes, and the result
   count is announced in a live region.
-- Touch targets ≥ 44 × 44 px.
+- Touch targets: **44 × 44 px for controls** (buttons, icon buttons, form controls, nav tabs).
+  Inline text links — breadcrumbs, footer lists, links inside a sentence — are held to **24 px**,
+  which is WCAG 2.5.8's AA floor and the case its "inline" exception covers; forcing 44 px there
+  would wreck a breadcrumb. Both thresholds are asserted in `tests/e2e/visual-qa.spec.ts`, which is
+  what caught the wordmark at 31 px and footer links at 16 px.
 - `prefers-reduced-motion: reduce` collapses every transition to ≤ 1 ms and resolves all
   scroll narratives to their end state.
 - `prefers-contrast: more` promotes hairlines and drops decorative opacity.

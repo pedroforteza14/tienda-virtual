@@ -82,7 +82,7 @@ export function CatalogFilters({
                 active={state.family === category.slug}
               >
                 {category.name}
-                <span className="ml-1.5 text-[var(--text-faint)]">{category.count}</span>
+                <span className="ml-1.5 text-fg-faint">{category.count}</span>
               </CategoryChip>
             </li>
           ))}
@@ -92,7 +92,7 @@ export function CatalogFilters({
       <details
         // Open by default from `lg` via the `[&]` selector below; a disclosure is
         // the right semantics on mobile and harmless on desktop.
-        className="group border-y border-[var(--line)] lg:border-0 lg:[&]:open"
+        className="group border-y border-line lg:border-0 lg:[&]:open"
         open
       >
         <summary className="u-label flex cursor-pointer list-none items-center justify-between py-4 lg:hidden">
@@ -159,9 +159,9 @@ export function CatalogFilters({
                   defaultValue={state.minPrice ?? ''}
                   aria-label="Precio mínimo en centavos"
                   placeholder="Mín"
-                  className="u-mono min-h-11 w-full min-w-0 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-transparent px-2.5 text-[var(--text-step--2)] focus:border-[var(--accent)]"
+                  className="u-mono min-h-11 w-full min-w-0 rounded-[var(--radius-sm)] border border-line-strong bg-transparent px-2.5 text-micro focus:border-accent"
                 />
-                <span aria-hidden="true" className="text-[var(--text-faint)]">
+                <span aria-hidden="true" className="text-fg-faint">
                   —
                 </span>
                 <input
@@ -174,7 +174,7 @@ export function CatalogFilters({
                   defaultValue={state.maxPrice ?? ''}
                   aria-label="Precio máximo en centavos"
                   placeholder="Máx"
-                  className="u-mono min-h-11 w-full min-w-0 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-transparent px-2.5 text-[var(--text-step--2)] focus:border-[var(--accent)]"
+                  className="u-mono min-h-11 w-full min-w-0 rounded-[var(--radius-sm)] border border-line-strong bg-transparent px-2.5 text-micro focus:border-accent"
                 />
               </div>
             </fieldset>
@@ -194,14 +194,14 @@ export function CatalogFilters({
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="u-mono min-h-11 flex-1 rounded-[var(--radius-sm)] bg-[var(--accent)] px-4 text-[var(--text-step--2)] uppercase tracking-[0.12em] text-[var(--on-accent)] transition-colors hover:bg-[var(--accent-hover)]"
+                  className="u-mono min-h-11 flex-1 rounded-[var(--radius-sm)] bg-accent px-4 text-micro uppercase tracking-[0.12em] text-on-accent transition-colors hover:bg-accent-hover"
                 >
                   Aplicar
                 </button>
                 {activeCount > 0 ? (
                   <Link
                     href={basePath}
-                    className="u-mono grid min-h-11 place-items-center rounded-[var(--radius-sm)] border border-[var(--line-strong)] px-4 text-[var(--text-step--2)] uppercase tracking-[0.12em] text-[var(--text-dim)] transition-colors hover:text-[var(--text)]"
+                    className="u-mono grid min-h-11 place-items-center rounded-[var(--radius-sm)] border border-line-strong px-4 text-micro uppercase tracking-[0.12em] text-fg-dim transition-colors hover:text-fg"
                   >
                     Limpiar
                   </Link>
@@ -213,7 +213,7 @@ export function CatalogFilters({
       </details>
 
       {/* Announced so a screen-reader user learns the result count changed. */}
-      <p aria-live="polite" className="u-mono mt-6 text-[var(--text-step--2)] text-[var(--text-dim)]">
+      <p aria-live="polite" className="u-mono mt-6 text-micro text-fg-dim">
         {resultCount} {resultCount === 1 ? 'producto' : 'productos'}
       </p>
     </div>
@@ -234,10 +234,10 @@ function CategoryChip({
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'u-mono inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border px-4 text-[var(--text-step--2)] uppercase tracking-[0.12em] transition-colors',
+        'u-mono inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border px-4 text-micro uppercase tracking-[0.12em] transition-colors',
         active
-          ? 'border-[var(--accent)] bg-[color-mix(in_oklab,var(--accent)_14%,transparent)] text-[var(--accent)]'
-          : 'border-[var(--line)] text-[var(--text-dim)] hover:border-[var(--line-strong)] hover:text-[var(--text)]',
+          ? 'border-accent bg-[color-mix(in_oklab,var(--accent)_14%,transparent)] text-accent'
+          : 'border-line text-fg-dim hover:border-line-strong hover:text-fg',
       )}
     >
       {children}
@@ -267,7 +267,7 @@ function Select({
         id={id}
         name={name}
         defaultValue={defaultValue}
-        className="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--surface-raised)] px-3 text-[var(--text-step--1)] focus:border-[var(--accent)]"
+        className="min-h-11 w-full rounded-[var(--radius-sm)] border border-line-strong bg-surface-raised px-3 text-tiny focus:border-accent"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

@@ -101,8 +101,14 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
     setQuote(cart);
   }, [cart]);
 
-  /** Focus the step heading on change, so the move is announced. */
+  /** Focus the step heading on CHANGE, never on first render — see
+   *  DiscoveryExperience for why focusing on mount breaks the skip link. */
+  const firstRender = useRef(true);
   useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     headingRef.current?.focus();
   }, [step]);
 
@@ -181,8 +187,8 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
   if (cart.lines.length === 0) {
     return (
       <div className="u-container u-section text-center">
-        <h1 className="u-display text-[var(--text-step-4)]">Tu carrito está vacío</h1>
-        <p className="u-prose mx-auto mt-4 text-[var(--text-step-0)] text-[var(--text-dim)]">
+        <h1 className="u-display text-h2">Tu carrito está vacío</h1>
+        <p className="u-prose mx-auto mt-4 text-body text-fg-dim">
           Agregá un producto y volvé para completar la compra.
         </p>
         <ButtonLink href="/tienda" size="lg" className="mt-8">
@@ -198,15 +204,15 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
         {/* Step indicator */}
         <ol className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Pasos del checkout">
           {STEPS.map((label, index) => (
-            <li key={label} className="u-mono flex items-center gap-2 text-[var(--text-step--2)]">
+            <li key={label} className="u-mono flex items-center gap-2 text-micro">
               <span
                 className={cn(
                   'grid size-5 place-items-center rounded-full border text-[0.5625rem]',
                   index === step
-                    ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]'
+                    ? 'border-accent bg-accent text-on-accent'
                     : index < step
-                      ? 'border-[var(--accent)] text-[var(--accent)]'
-                      : 'border-[var(--line)] text-[var(--text-faint)]',
+                      ? 'border-accent text-accent'
+                      : 'border-line text-fg-faint',
                 )}
               >
                 {index < step ? '✓' : index + 1}
@@ -214,7 +220,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
               <span
                 className={cn(
                   'uppercase tracking-[0.12em]',
-                  index === step ? 'text-[var(--text)]' : 'text-[var(--text-faint)]',
+                  index === step ? 'text-fg' : 'text-fg-faint',
                 )}
                 aria-current={index === step ? 'step' : undefined}
               >
@@ -227,7 +233,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
         <h1
           ref={headingRef}
           tabIndex={-1}
-          className="u-display mt-8 text-[var(--text-step-4)] outline-none"
+          className="u-display mt-8 text-h2 outline-none"
         >
           {STEPS[step]}
         </h1>
@@ -283,8 +289,8 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
                     className={cn(
                       'flex cursor-pointer items-start gap-3 rounded-[var(--radius-sm)] border p-4 transition-colors',
                       shipping.zone === candidate.zone
-                        ? 'border-[var(--accent)] bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]'
-                        : 'border-[var(--line)] hover:border-[var(--line-strong)]',
+                        ? 'border-accent bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]'
+                        : 'border-line hover:border-line-strong',
                     )}
                   >
                     <input
@@ -297,14 +303,14 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
                     />
                     <span className="flex-1">
                       <span className="flex flex-wrap items-baseline justify-between gap-2">
-                        <span className="text-[var(--text-step-0)] text-[var(--text)]">
+                        <span className="text-body text-fg">
                           {candidate.label}
                         </span>
-                        <span className="u-mono text-[var(--text-step--1)] text-[var(--text-dim)]">
+                        <span className="u-mono text-tiny text-fg-dim">
                           {candidate.flatRate === 0 ? 'Sin cargo' : formatARS(candidate.flatRate)}
                         </span>
                       </span>
-                      <span className="u-mono mt-1 block text-[var(--text-step--2)] text-[var(--text-faint)]">
+                      <span className="u-mono mt-1 block text-micro text-fg-faint">
                         {candidate.detail} ·{' '}
                         {candidate.etaDays[0] === 0
                           ? 'mismo día'
@@ -359,7 +365,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
                 />
               </div>
             ) : (
-              <p className="u-mono rounded-[var(--radius-sm)] border border-[var(--line)] p-4 text-[var(--text-step--1)] text-[var(--text-dim)]">
+              <p className="u-mono rounded-[var(--radius-sm)] border border-line p-4 text-tiny text-fg-dim">
                 {site.store.pickupNote} Te escribimos para coordinar el turno.
               </p>
             )}
@@ -398,7 +404,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
               </div>
             </fieldset>
 
-            <p className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">
+            <p className="u-mono text-micro text-fg-faint">
               Los datos de tu tarjeta se ingresan directamente en el procesador de pagos. OWNER no
               los recibe ni los almacena.
             </p>
@@ -429,7 +435,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
               {shipping.notes ? (
                 <>
                   <br />
-                  <span className="text-[var(--text-faint)]">{shipping.notes}</span>
+                  <span className="text-fg-faint">{shipping.notes}</span>
                 </>
               ) : null}
             </ReviewBlock>
@@ -451,20 +457,20 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
                 aria-invalid={errors.acceptedTerms ? true : undefined}
                 className="mt-1 size-4 flex-none accent-[var(--accent)]"
               />
-              <span className="text-[var(--text-step--1)] text-[var(--text-dim)]">
+              <span className="text-tiny text-fg-dim">
                 Acepto los{' '}
-                <Link href="/legal/terminos" className="text-[var(--accent)] underline">
+                <Link href="/legal/terminos" className="text-accent underline">
                   términos y condiciones
                 </Link>{' '}
                 y la{' '}
-                <Link href="/legal/privacidad" className="text-[var(--accent)] underline">
+                <Link href="/legal/privacidad" className="text-accent underline">
                   política de privacidad
                 </Link>
                 .
               </span>
             </label>
             {errors.acceptedTerms ? (
-              <p id="terms-error" role="status" className="u-mono text-[var(--color-signal-err)]">
+              <p id="terms-error" role="status" className="u-mono text-signal-err">
                 {errors.acceptedTerms}
               </p>
             ) : null}
@@ -474,7 +480,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
         {formError ? (
           <p
             role="status"
-            className="u-mono mt-6 max-w-xl rounded-[var(--radius-sm)] border border-[color-mix(in_oklab,var(--color-signal-err)_50%,transparent)] p-4 text-[var(--text-step--1)] text-[var(--color-signal-err)]"
+            className="u-mono mt-6 max-w-xl rounded-[var(--radius-sm)] border border-[color-mix(in_oklab,var(--color-signal-err)_50%,transparent)] p-4 text-tiny text-signal-err"
           >
             {formError}
           </p>
@@ -491,12 +497,12 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
                 setFormError(null);
                 setStep((current) => Math.max(0, current - 1));
               }}
-              className="border border-[var(--line)]"
+              className="border border-line"
             >
               ← Volver
             </Button>
           ) : (
-            <ButtonLink href="/tienda" variant="ghost" className="border border-[var(--line)]">
+            <ButtonLink href="/tienda" variant="ghost" className="border border-line">
               ← Seguir comprando
             </ButtonLink>
           )}
@@ -515,7 +521,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
 
       {/* ------------------------------ SUMMARY ----------------------------- */}
       <aside aria-labelledby="summary-heading" className="lg:sticky lg:top-[calc(var(--header-h)+2rem)] lg:self-start">
-        <div className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+        <div className="rounded-[var(--radius-lg)] border border-line bg-surface-raised p-5">
           <h2 id="summary-heading" className="u-label">
             Tu pedido
           </h2>
@@ -524,22 +530,22 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
             {quote.lines.map((line) => (
               <li key={line.sku} className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-[var(--text-step--1)]">
+                  <p className="truncate text-tiny">
                     {line.productName}
-                    <span className="u-mono text-[var(--text-faint)]"> ×{line.qty}</span>
+                    <span className="u-mono text-fg-faint"> ×{line.qty}</span>
                   </p>
-                  <p className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">
+                  <p className="u-mono text-micro text-fg-faint">
                     {[line.colorName, line.variantLabel].filter(Boolean).join(' · ')}
                   </p>
                 </div>
-                <p className="u-mono flex-none text-[var(--text-step--1)]">
+                <p className="u-mono flex-none text-tiny">
                   {formatARS(line.lineTotal)}
                 </p>
               </li>
             ))}
           </ul>
 
-          <dl className="u-mono mt-5 flex flex-col gap-2 border-t border-[var(--line)] pt-4 text-[var(--text-step--1)]">
+          <dl className="u-mono mt-5 flex flex-col gap-2 border-t border-line pt-4 text-tiny">
             <SummaryRow label="Subtotal" value={formatARS(quote.totals.subtotal)} />
             {quote.totals.promoDiscount > 0 ? (
               <SummaryRow
@@ -566,9 +572,9 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
               />
             ) : null}
 
-            <div className="mt-2 flex items-baseline justify-between border-t border-[var(--line)] pt-3">
-              <dt className="u-label normal-case tracking-[0.1em] text-[var(--text)]">Total</dt>
-              <dd className="u-mono text-[var(--text-step-2)] font-semibold">
+            <div className="mt-2 flex items-baseline justify-between border-t border-line pt-3">
+              <dt className="u-label normal-case tracking-[0.1em] text-fg">Total</dt>
+              <dd className="u-mono text-h4 font-semibold">
                 {formatARS(
                   paymentMethod === 'transfer' ? quote.totals.transferTotal : quote.totals.cardTotal,
                 )}
@@ -600,14 +606,14 @@ function SummaryRow({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-[var(--text-dim)]">{label}</dt>
+      <dt className="text-fg-dim">{label}</dt>
       <dd
         className={
           tone === 'ok'
-            ? 'text-[var(--color-signal-ok)]'
+            ? 'text-signal-ok'
             : tone === 'brass'
-              ? 'text-[var(--accent)]'
-              : 'text-[var(--text)]'
+              ? 'text-accent'
+              : 'text-fg'
         }
       >
         {value}
@@ -634,8 +640,8 @@ function PaymentOption({
       className={cn(
         'flex cursor-pointer items-start gap-3 rounded-[var(--radius-sm)] border p-4 transition-colors',
         checked
-          ? 'border-[var(--accent)] bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]'
-          : 'border-[var(--line)] hover:border-[var(--line-strong)]',
+          ? 'border-accent bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]'
+          : 'border-line hover:border-line-strong',
       )}
     >
       <input
@@ -647,10 +653,10 @@ function PaymentOption({
       />
       <span className="flex-1">
         <span className="flex flex-wrap items-baseline justify-between gap-2">
-          <span className="text-[var(--text-step-0)] text-[var(--text)]">{title}</span>
-          <span className="u-mono text-[var(--text-step--1)] font-semibold">{amount}</span>
+          <span className="text-body text-fg">{title}</span>
+          <span className="u-mono text-tiny font-semibold">{amount}</span>
         </span>
-        <span className="u-mono mt-1 block text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <span className="u-mono mt-1 block text-micro text-fg-faint">
           {detail}
         </span>
       </span>
@@ -668,19 +674,19 @@ function ReviewBlock({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[var(--radius-sm)] border border-[var(--line)] p-4">
+    <div className="rounded-[var(--radius-sm)] border border-line p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="u-label">{title}</h2>
         <button
           type="button"
           onClick={onEdit}
-          className="u-mono text-[var(--text-step--2)] uppercase tracking-[0.12em] text-[var(--accent)] transition-colors hover:text-[var(--accent-hover)]"
+          className="u-mono text-micro uppercase tracking-[0.12em] text-accent transition-colors hover:text-accent-hover"
         >
           Editar
           <span className="sr-only"> {title}</span>
         </button>
       </div>
-      <p className="mt-3 text-[var(--text-step--1)] text-[var(--text-dim)]">{children}</p>
+      <p className="mt-3 text-tiny text-fg-dim">{children}</p>
     </div>
   );
 }

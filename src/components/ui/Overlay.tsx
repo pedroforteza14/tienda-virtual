@@ -33,9 +33,9 @@ export type OverlaySide = 'right' | 'top' | 'full';
 
 const PANEL_POSITION: Record<OverlaySide, string> = {
   right:
-    'inset-y-0 right-0 w-full max-w-[28rem] border-l border-[var(--line)] ' +
+    'inset-y-0 right-0 w-full max-w-[28rem] border-l border-line ' +
     'rounded-l-[var(--radius-lg)] sm:rounded-l-[var(--radius-xl)]',
-  top: 'inset-x-0 top-0 max-h-[85dvh] border-b border-[var(--line)]',
+  top: 'inset-x-0 top-0 max-h-[85dvh] border-b border-line',
   full: 'inset-0',
 };
 
@@ -188,15 +188,15 @@ export function Overlay({
               ease: [0.16, 1, 0.3, 1],
             }}
             className={cn(
-              'absolute flex flex-col bg-[var(--surface-raised)] outline-none',
+              'absolute flex flex-col bg-surface-raised outline-none',
               PANEL_POSITION[side],
               className,
             )}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] px-5 py-4">
+            <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4">
               <h2
                 id={titleId}
-                className={cn('u-label text-[var(--text)]', hideTitle && 'sr-only')}
+                className={cn('u-label text-fg', hideTitle && 'sr-only')}
               >
                 {title}
               </h2>
@@ -205,7 +205,7 @@ export function Overlay({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="grid size-11 place-items-center rounded-[var(--radius-sm)] text-[var(--text-dim)] transition-colors hover:text-[var(--text)]"
+                  className="grid size-11 place-items-center rounded-[var(--radius-sm)] text-fg-dim transition-colors hover:text-fg"
                 >
                   <span className="sr-only">Cerrar</span>
                   <svg viewBox="0 0 16 16" className="size-4" aria-hidden="true">

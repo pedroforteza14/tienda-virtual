@@ -41,20 +41,12 @@ export function shade(hex: string, amount: number): string {
 }
 
 /**
- * A stable id suffix for SVG `<defs>`.
+ * Sanitise a React `useId()` value into something usable as an SVG id.
  *
- * SVG ids are document-global, so two renders must not accidentally reference
- * each other's gradients. Deriving the id from the inputs means two instances
- * only ever collide when their gradient definitions are *identical*, which is
- * harmless — and it avoids `useId()`, which would force this whole tree to be a
- * client component.
+ * `useId()` returns values like `«r3»` or `:r3:`, and those characters are not
+ * valid inside a `url(#…)` reference. Stripping to `[A-Za-z0-9]` keeps the
+ * uniqueness and makes the result referenceable.
  */
-export function defsId(parts: (string | boolean | undefined)[]): string {
-  let hash = 0x811c9dc5;
-  const key = parts.join('|');
-  for (let i = 0; i < key.length; i += 1) {
-    hash ^= key.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return hash.toString(36);
+export function defsId(reactId: string): string {
+  return `o${reactId.replace(/[^a-zA-Z0-9]/g, '')}`;
 }

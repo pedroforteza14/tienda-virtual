@@ -31,10 +31,10 @@ export default function ErrorBoundary({
       <div className="text-center">
         <Aperture size="7rem" className="mx-auto" />
         <p className="u-label mt-10">Algo se rompió</p>
-        <h1 className="u-display mt-4 text-[var(--text-step-4)]">
-          Volvé a <span className="u-editorial text-[var(--accent)] normal-case">intentar</span>.
+        <h1 className="u-display mt-4 text-h2">
+          Volvé a <span className="u-editorial text-accent normal-case">intentar</span>.
         </h1>
-        <p className="u-prose mx-auto mt-5 text-[var(--text-step-0)] text-[var(--text-dim)]">
+        <p className="u-prose mx-auto mt-5 text-body text-fg-dim">
           Tuvimos un problema de nuestro lado. Tu carrito está a salvo.
         </p>
 
@@ -48,7 +48,7 @@ export default function ErrorBoundary({
         </div>
 
         {error.digest ? (
-          <p className="u-mono mt-10 text-[var(--text-step--2)] text-[var(--text-faint)]">
+          <p className="u-mono mt-10 text-micro text-fg-faint">
             Referencia: {error.digest}
           </p>
         ) : null}

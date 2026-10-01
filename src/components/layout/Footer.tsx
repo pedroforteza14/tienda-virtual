@@ -24,17 +24,17 @@ const CATEGORY_LABELS: Record<string, string> = {
  */
 export function Footer() {
   return (
-    <footer className="u-hairline-top mt-auto bg-[var(--surface)]">
+    <footer className="u-hairline-top mt-auto bg-surface">
       <WhatsAppCta />
 
       <div className="u-container u-section-tight grid gap-10 lg:grid-cols-[1.2fr_repeat(3,minmax(0,1fr))]">
         <div>
           <Wordmark />
-          <p className="u-prose mt-4 text-[var(--text-step--1)] text-[var(--text-dim)]">
+          <p className="u-prose mt-4 text-tiny text-fg-dim">
             Productos Apple originales en Argentina. Garantía de {site.commerce.warrantyMonths} meses,
             envíos a todo el país y atención por WhatsApp de personas reales.
           </p>
-          <p className="u-mono mt-5 text-[var(--text-step--2)] text-[var(--text-faint)]">
+          <p className="u-mono mt-5 text-micro text-fg-faint">
             {site.store.city}, {site.store.province}
           </p>
         </div>
@@ -48,7 +48,7 @@ export function Footer() {
               <li key={family}>
                 <Link
                   href={`/tienda/${family}`}
-                  className="text-[var(--text-step--1)] text-[var(--text-dim)] transition-colors hover:text-[var(--text)]"
+                  className="inline-block py-1 text-tiny text-fg-dim transition-colors hover:text-fg"
                 >
                   {CATEGORY_LABELS[family] ?? family}
                 </Link>
@@ -72,7 +72,7 @@ export function Footer() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="text-[var(--text-step--1)] text-[var(--text-dim)] transition-colors hover:text-[var(--text)]"
+                  className="inline-block py-1 text-tiny text-fg-dim transition-colors hover:text-fg"
                 >
                   {item.label}
                 </Link>
@@ -83,7 +83,7 @@ export function Footer() {
 
         <div>
           <h2 className="u-label">Confianza</h2>
-          <ul className="mt-4 flex flex-col gap-2.5 text-[var(--text-step--1)] text-[var(--text-dim)]">
+          <ul className="mt-4 flex flex-col gap-2.5 text-tiny text-fg-dim">
             <li>Equipos nuevos, sellados y liberados</li>
             <li>Garantía escrita de {site.commerce.warrantyMonths} meses</li>
             <li>
@@ -99,7 +99,7 @@ export function Footer() {
                 href={`https://www.instagram.com/${site.contact.instagram}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="u-label text-[var(--text-dim)] transition-colors hover:text-[var(--accent)]"
+                className="u-label inline-block py-1.5 text-fg-dim transition-colors hover:text-accent"
               >
                 Instagram
                 <span className="sr-only"> (se abre en una pestaña nueva)</span>
@@ -108,7 +108,7 @@ export function Footer() {
             <li>
               <a
                 href={`mailto:${site.contact.email}`}
-                className="u-label text-[var(--text-dim)] transition-colors hover:text-[var(--accent)]"
+                className="u-label inline-block py-1.5 text-fg-dim transition-colors hover:text-accent"
               >
                 Email
               </a>
@@ -118,7 +118,7 @@ export function Footer() {
       </div>
 
       <div className="u-container u-hairline-top flex flex-col gap-3 py-6 md:flex-row md:items-center md:justify-between">
-        <p className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)]">
+        <p className="u-mono text-micro text-fg-faint">
           © {new Date().getFullYear()} {site.name}
         </p>
         <ul className="flex flex-wrap gap-5">
@@ -129,7 +129,7 @@ export function Footer() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className="u-mono text-[var(--text-step--2)] text-[var(--text-faint)] transition-colors hover:text-[var(--text-dim)]"
+                className="u-mono inline-block py-1.5 text-micro text-fg-faint transition-colors hover:text-fg-dim"
               >
                 {item.label}
               </Link>
@@ -140,7 +140,7 @@ export function Footer() {
 
       {PRICES_ARE_MOCK ? (
         <div className="border-t border-[color-mix(in_oklab,var(--accent)_30%,transparent)] bg-[color-mix(in_oklab,var(--accent)_7%,transparent)]">
-          <p className="u-container u-mono py-3 text-center text-[var(--text-step--2)] text-[var(--accent)]">
+          <p className="u-container u-mono py-3 text-center text-micro text-accent">
             Demo · Los precios, el stock y los datos de pago de este sitio son de demostración y no
             corresponden a valores reales.
           </p>

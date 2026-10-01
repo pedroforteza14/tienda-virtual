@@ -119,9 +119,19 @@ describe('token discipline', () => {
   });
 
   it('defines the full fluid type scale and the motion primitives', () => {
-    for (let step = -2; step <= 7; step += 1) {
-      const name = step < 0 ? `--text-step-${'-'.repeat(1)}${Math.abs(step)}` : `--text-step-${step}`;
-      expect(css, name).toContain(name);
+    for (const name of [
+      '--text-micro',
+      '--text-tiny',
+      '--text-body',
+      '--text-lead',
+      '--text-h4',
+      '--text-h3',
+      '--text-h2',
+      '--text-h1',
+      '--text-display',
+      '--text-hero',
+    ]) {
+      expect(css, name).toContain(`${name}:`);
     }
     for (const name of ['--dur-instant', '--dur-fast', '--dur-base', '--dur-slow', '--dur-cinema']) {
       expect(css, name).toContain(name);
@@ -134,6 +144,59 @@ describe('token discipline', () => {
   it('honours prefers-contrast and declares a light-surface block', () => {
     expect(css).toContain('prefers-contrast: more');
     expect(css).toContain("[data-surface='light']");
+  });
+});
+
+/**
+ * A regression rail for a bug that was invisible in review and obvious in a
+ * screenshot.
+ *
+ * Font sizes were written as `text-[var(--text-hero)]`. Tailwind v4 cannot tell
+ * whether an arbitrary `text-[…]` value is a length or a colour, and for an opaque
+ * `var()` it resolves to **colour** — so every heading in the application silently
+ * rendered at the inherited 16px while the markup looked perfectly correct. The
+ * fix is to use the generated utilities (`text-hero`), which are typed.
+ */
+describe('type scale is applied through utilities, not arbitrary values', () => {
+  const SIZE_TOKENS = [
+    'micro',
+    'tiny',
+    'body',
+    'lead',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'display',
+    'hero',
+  ];
+
+  it('no source file sizes text with an arbitrary var()', async () => {
+    const { readdirSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!/\.tsx?$/.test(entry)) continue;
+        const source = readFileSync(full, 'utf8');
+        for (const token of SIZE_TOKENS) {
+          if (source.includes(`text-[var(--text-${token})]`)) {
+            offenders.push(`${full} → text-[var(--text-${token})]`);
+          }
+        }
+        // The old scale must not come back either.
+        if (source.includes('text-step-')) offenders.push(`${full} → legacy text-step-* token`);
+      }
+    };
+    walk(new URL('../../src', import.meta.url).pathname);
+
+    expect(offenders).toEqual([]);
   });
 });
 

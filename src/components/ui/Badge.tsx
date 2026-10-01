@@ -12,11 +12,11 @@ import { cn } from '@/lib/utils/cn';
 export type BadgeTone = 'neutral' | 'ok' | 'low' | 'out' | 'brass';
 
 const TONES: Record<BadgeTone, string> = {
-  neutral: 'text-[var(--text-dim)] border-[var(--line)]',
-  ok: 'text-[var(--color-signal-ok)] border-[color-mix(in_oklab,var(--color-signal-ok)_45%,transparent)]',
-  low: 'text-[var(--color-signal-low)] border-[color-mix(in_oklab,var(--color-signal-low)_45%,transparent)]',
-  out: 'text-[var(--text-faint)] border-[var(--line)] line-through decoration-1',
-  brass: 'text-[var(--accent)] border-[color-mix(in_oklab,var(--accent)_50%,transparent)]',
+  neutral: 'text-fg-dim border-line',
+  ok: 'text-signal-ok border-[color-mix(in_oklab,var(--color-signal-ok)_45%,transparent)]',
+  low: 'text-signal-low border-[color-mix(in_oklab,var(--color-signal-low)_45%,transparent)]',
+  out: 'text-fg-faint border-line line-through decoration-1',
+  brass: 'text-accent border-[color-mix(in_oklab,var(--accent)_50%,transparent)]',
 };
 
 export function Badge({

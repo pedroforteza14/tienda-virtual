@@ -57,8 +57,8 @@ export default async function AccountPage() {
           <>
             <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <h1 className="u-display text-[var(--text-step-4)]">Hola, {user.name.split(' ')[0]}.</h1>
-                <p className="u-mono mt-2 text-[var(--text-step--1)] text-[var(--text-dim)]">
+                <h1 className="u-display text-h2">Hola, {user.name.split(' ')[0]}.</h1>
+                <p className="u-mono mt-2 text-tiny text-fg-dim">
                   {user.email}
                 </p>
               </div>
@@ -67,9 +67,9 @@ export default async function AccountPage() {
           </>
         ) : (
           <>
-            <h1 className="u-display mt-4 max-w-[20ch] text-[var(--text-step-4)]">
+            <h1 className="u-display mt-4 max-w-[20ch] text-h2">
               Tus pedidos, en un
-              <span className="u-editorial ml-3 text-[var(--accent)] normal-case">lugar</span>.
+              <span className="u-editorial ml-3 text-accent normal-case">lugar</span>.
             </h1>
             <div className="mt-10">
               <AuthPanel />
@@ -80,13 +80,13 @@ export default async function AccountPage() {
         {/* Orders are shown whether or not there is an account, because a guest
             session owns its own orders. */}
         <section aria-labelledby="orders-heading" className="mt-16">
-          <h2 id="orders-heading" className="u-label border-t border-[var(--line)] pt-6">
+          <h2 id="orders-heading" className="u-label border-t border-line pt-6">
             Pedidos recientes
           </h2>
 
           {orders.length === 0 ? (
             <div className="mt-6">
-              <p className="text-[var(--text-step-0)] text-[var(--text-dim)]">
+              <p className="text-body text-fg-dim">
                 Todavía no hiciste ningún pedido con esta sesión.
               </p>
               <ButtonLink href="/tienda" variant="secondary" size="md" className="mt-5">
@@ -94,16 +94,16 @@ export default async function AccountPage() {
               </ButtonLink>
             </div>
           ) : (
-            <ul className="mt-4 divide-y divide-[var(--line)] border-y border-[var(--line)]">
+            <ul className="mt-4 divide-y divide-line border-y border-line">
               {orders.map((order) => (
                 <li key={order.reference}>
                   <Link
                     href={`/pedido/${order.reference}`}
-                    className="flex flex-wrap items-center justify-between gap-4 py-5 transition-colors hover:bg-[var(--surface-raised)]"
+                    className="flex flex-wrap items-center justify-between gap-4 py-5 transition-colors hover:bg-surface-raised"
                   >
                     <div>
-                      <p className="u-mono text-[var(--text-step-0)]">{order.reference}</p>
-                      <p className="u-mono mt-1 text-[var(--text-step--2)] text-[var(--text-faint)]">
+                      <p className="u-mono text-body">{order.reference}</p>
+                      <p className="u-mono mt-1 text-micro text-fg-faint">
                         {new Date(order.createdAt).toLocaleDateString('es-AR', {
                           day: '2-digit',
                           month: 'long',
@@ -126,7 +126,7 @@ export default async function AccountPage() {
                       >
                         {STATUS_LABEL[order.status] ?? order.status}
                       </Badge>
-                      <p className="u-mono text-[var(--text-step-0)] font-semibold">
+                      <p className="u-mono text-body font-semibold">
                         {formatARS(
                           order.paymentMethod === 'transfer'
                             ? order.totals.transferTotal

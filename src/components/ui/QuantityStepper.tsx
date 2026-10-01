@@ -33,7 +33,7 @@ export function QuantityStepper({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-[var(--radius-sm)] border border-[var(--line-strong)]',
+        'inline-flex items-center rounded-[var(--radius-sm)] border border-line-strong',
         disabled && 'opacity-50',
         className,
       )}
@@ -43,7 +43,7 @@ export function QuantityStepper({
         onClick={() => onChange(clamp(value - 1))}
         disabled={disabled || value <= 1}
         aria-label={`Quitar una unidad de ${label}`}
-        className="grid size-11 place-items-center text-[var(--text-dim)] transition-colors hover:text-[var(--text)] disabled:opacity-40 disabled:hover:text-[var(--text-dim)]"
+        className="grid size-11 place-items-center text-fg-dim transition-colors hover:text-fg disabled:opacity-40 disabled:hover:text-fg-dim"
       >
         <span aria-hidden="true">−</span>
       </button>
@@ -57,11 +57,13 @@ export function QuantityStepper({
         value={value}
         disabled={disabled}
         aria-label={`Cantidad de ${label}`}
+        // 44×44 like the buttons either side of it: visual QA found this at
+        // 40×23, which is a control below the documented minimum.
         onChange={(event) => {
           const parsed = Number.parseInt(event.target.value, 10);
           if (Number.isFinite(parsed)) onChange(clamp(parsed));
         }}
-        className="u-mono w-10 border-0 bg-transparent text-center text-[var(--text-step--1)] text-[var(--text)] [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="u-mono h-11 w-11 border-0 bg-transparent text-center text-tiny text-fg [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
 
       <button
@@ -69,7 +71,7 @@ export function QuantityStepper({
         onClick={() => onChange(clamp(value + 1))}
         disabled={disabled || value >= ceiling}
         aria-label={`Agregar una unidad de ${label}`}
-        className="grid size-11 place-items-center text-[var(--text-dim)] transition-colors hover:text-[var(--text)] disabled:opacity-40 disabled:hover:text-[var(--text-dim)]"
+        className="grid size-11 place-items-center text-fg-dim transition-colors hover:text-fg disabled:opacity-40 disabled:hover:text-fg-dim"
       >
         <span aria-hidden="true">+</span>
       </button>
