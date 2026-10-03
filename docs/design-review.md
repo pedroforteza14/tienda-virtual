@@ -37,10 +37,21 @@ were found by looking at the running thing.
 | 18 | CLS of 0.56 against a 0.1 budget | The pinned rail grew from `auto` to 220vh after hydration | Visual-QA sweep |
 | 19 | Media-query rules lost to Tailwind utilities | The fix for #18 silently did nothing; panels never resized | Measuring the fix |
 | 20 | Mobile PDP put two paragraphs of prose above the price | Narrative between the visitor and the sale | Screenshot review |
+| 21 | `headers()` returned `headers: []` outside production | **`next dev` refused to boot** — "Invalid header found" | Running `npm run dev` for the first time |
 
 Several of the later ones are worth noting as a pattern: **each fix exposed the next defect.** #1
 was hiding #17 (no JavaScript ran, so the drawer could never stay open); #18's fix created #19. A
 single pass would have found one of them.
+
+#21 is the sharpest instance of the same lesson in a different direction. The whole verification
+pipeline — `npm run verify` and the Playwright web server alike — runs the app through
+`next build && next start`, which is `NODE_ENV=production`. The one conditional that produced an
+empty header list was the development branch, so the mode nobody tested was the only mode that was
+broken, and it was broken completely: the dev server exited instead of starting. 262 unit tests, 220
+e2e tests and a clean build all passed over a repository whose `npm run dev` did not run. It was
+found the first time anyone typed the command. `tests/unit/next-config.test.ts` now asserts the
+header table in all three modes, because a check that only ever exercises one configuration can only
+ever vouch for one configuration.
 
 **The lesson, stated plainly:** a type system and a linter verify that code is *well-formed*, not
 that it is *right*. Five of these (#1, #2, #3, #5, #19) were tools silently guessing wrong about ambiguous input — a

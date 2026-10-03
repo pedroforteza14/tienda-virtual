@@ -11,8 +11,16 @@ Next.js 15 · React 19 · TypeScript (strict) · Tailwind CSS v4 · Zod · Motio
 
 ```bash
 npm install
-cp .env.example .env.local      # fill in SESSION_SECRET for anything but dev
 npm run dev                     # http://localhost:3000
+```
+
+Development needs no configuration: with no `SESSION_SECRET` set, a fixed
+development key is used and a warning is logged. For anything that is not your
+own machine, copy the template and fill it in — in production the server
+refuses to start without a real secret:
+
+```bash
+cp .env.example .env.local
 ```
 
 Generate a session secret:
@@ -25,9 +33,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 | --- | --- |
 | `npm run dev` | Development server |
 | `npm run build` / `start` | Production build and server |
-| `npm run verify` | typecheck → lint → 261 unit/integration tests → production build |
+| `npm run verify` | typecheck → lint → 266 unit/integration tests → production build |
 | `npm run test` | Vitest (unit + integration) |
-| `npm run test:e2e` | Playwright — 206 tests: shopping, accessibility, visual QA |
+| `npm run test:e2e` | Playwright — 220 tests: shopping, accessibility, visual QA |
 | `npm audit` | Dependency audit. Currently **0 vulnerabilities** |
 
 ---
@@ -104,7 +112,7 @@ collects no address, atomic stock reservation, and order expiry.
 **Payments** — a provider interface with mock, Mercado Pago and Stripe adapters. Hosted checkout
 only, so no card data ever reaches this origin.
 
-**Quality** — 261 unit and integration tests, 206 browser tests across desktop and mobile covering
+**Quality** — 266 unit and integration tests, 220 browser tests across desktop and mobile covering
 the purchase path, accessibility (landmarks, focus management, keyboard, reduced motion) and visual
 QA (overflow, clipping, tap targets, layout shift) at all six required viewports.
 

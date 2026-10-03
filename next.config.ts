@@ -71,25 +71,33 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    // HSTS only makes sense over TLS, and preloading a localhost dev server
+    // would be hostile, so it is scoped to production builds. Note the entry is
+    // omitted entirely rather than carrying an empty `headers` array: Next
+    // rejects `headers: []` with "Invalid header found" and refuses to boot,
+    // which broke `next dev` while `next build` (always NODE_ENV=production)
+    // stayed green.
+    const hsts =
+      process.env.NODE_ENV === 'production'
+        ? [
+            {
+              source: '/:path*',
+              headers: [
+                {
+                  key: 'Strict-Transport-Security',
+                  value: 'max-age=63072000; includeSubDomains; preload',
+                },
+              ],
+            },
+          ]
+        : [];
+
     return [
       {
         source: '/:path*',
         headers: securityHeaders,
       },
-      {
-        // HSTS only makes sense over TLS, and preloading a localhost dev server
-        // would be hostile, so it is scoped to production builds.
-        source: '/:path*',
-        headers:
-          process.env.NODE_ENV === 'production'
-            ? [
-                {
-                  key: 'Strict-Transport-Security',
-                  value: 'max-age=63072000; includeSubDomains; preload',
-                },
-              ]
-            : [],
-      },
+      ...hsts,
       {
         // Immutable, content-hashed font files.
         source: '/fonts/:path*',
