@@ -1,7 +1,7 @@
 # OWNER STORE — Threat Model
 
 Method: STRIDE per trust boundary, scored by what an attacker actually gains. Scope is the
-storefront as built (Next.js App Router, Route Handlers, in-memory repositories behind interfaces)
+storefront as built (Next.js App Router, Route Handlers, repositories over a shared store behind interfaces)
 plus the payment integration the architecture is prepared for.
 
 > **Status.** This is a storefront with a server-authoritative commerce core and **mock catalogue
@@ -57,7 +57,7 @@ plus the payment integration the architecture is prepared for.
          │ B2: datastore                │ B3: PSP API         │ B4: inbound webhook
  ┌───────▼────────┐          ┌──────────▼─────────┐  ┌────────▼──────────────────┐
  │ Repositories   │          │ Mercado Pago /     │  │ PSP → /api/webhooks/*     │
- │ (in-memory →   │          │ Stripe (outbound,  │  │ ⇒ UNTRUSTED until the     │
+ │ (shared store  │          │ Stripe (outbound,  │  │ ⇒ UNTRUSTED until the     │
  │  SQL [PRE-     │          │  server-only keys) │  │   HMAC verifies.          │
  │  LAUNCH])      │          └────────────────────┘  └───────────────────────────┘
  └────────────────┘
@@ -89,8 +89,9 @@ shipping and total are derived server-side, every time, from the catalogue.
 | Attack | Mitigation |
 | --- | --- |
 | Claim stock the client says exists | Stock is read from the catalogue server-side at add-to-cart *and* re-checked at order creation. Client stock is display-only. |
-| Oversell via concurrent checkout (race) | Order creation takes a per-SKU mutex and re-reads stock inside it, so the check and the decrement are atomic. **[PRE-LAUNCH]** replace with a conditional `UPDATE … WHERE stock >= n` / `SELECT … FOR UPDATE`; an in-process mutex does not survive horizontal scaling. |
+| Oversell via concurrent checkout (race) | `CommerceStore.reserveStock` checks availability and commits the reservation as one indivisible operation: a block with no `await` in the memory driver, a Lua script in the Redis one. All lines or none. Driven concurrently against a real `redis-server` in `tests/unit/store-contract.test.ts`. |
 | Denial of inventory by filling carts | Carts never hold stock. Only a created order decrements, and unpaid orders expire. |
+| Double-settling one order from two instances | The status check happens **inside** the compare-and-set mutation, not before it, so a retry re-evaluates against the current record and declines. Exactly one caller transitions an order to paid, and only the caller that actually cancels one releases its stock. |
 
 ### 4.3 Spoofing — identity & session **[A3]**
 
@@ -125,7 +126,7 @@ shipping and total are derived server-side, every time, from the catalogue.
 | Script injection through a dependency | Strict CSP with a per-request **nonce** and `strict-dynamic`, no `unsafe-inline` for scripts, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`. A skimmer injected into a bundle still cannot exfiltrate to an unlisted origin, because `connect-src 'self'` is an allow-list. **A nonce requires dynamic rendering**: a per-request value cannot exist in a file generated once at build time. We shipped a prerendered build against this policy and the browser refused every script — the site was wholly non-interactive in production while all tests, types and lints passed. Every page therefore sets `export const dynamic = 'force-dynamic'`; removing it silently reintroduces the outage. |
 | Style injection | `style-src` does carry `'unsafe-inline'`, because React renders the `style` prop as an attribute and Next inlines critical CSS. Accepted knowingly: style injection is defacement and, in exotic setups, exfiltration — an order of magnitude below script execution, which keeps the strict policy. |
 | SVG XSS | `images.dangerouslyAllowSVG: false`; device renders are compiled React components, not uploaded files. |
-| SQL / NoSQL injection | No raw queries. **[PRE-LAUNCH]** the repository interfaces are designed for a parameterised/ORM implementation; ids are validated as UUIDs *before* reaching a repository. |
+| SQL / NoSQL injection | No raw queries. Store keys are built from fixed prefixes plus either a UUID validated before it is used, a hash of the input, or a value the server generated; nothing a user types shapes a key. **[PRE-LAUNCH]** the repository interfaces are designed for a parameterised/ORM implementation. |
 
 ### 4.6 Repudiation — payments & webhooks **[A1 · A5]**
 
@@ -133,7 +134,7 @@ shipping and total are derived server-side, every time, from the catalogue.
 | --- | --- |
 | Client reports `payment: approved` | Impossible by design: **only a verified webhook or a server-side PSP query can move an order to `paid`.** There is no client-callable transition. |
 | Forged webhook | HMAC-SHA256 over the raw body, constant-time compared, secret from env. Unverified → **401**, and the order is untouched. |
-| Replayed webhook | Event ids are recorded; a seen id is acknowledged with **200** and no state change (idempotent). A timestamp outside a 5-minute window is rejected. |
+| Replayed webhook | The event id is **claimed with a conditional write** before anything touches an order, so two concurrent deliveries of the same event cannot both settle it; a losing claim is acknowledged with **200** and no state change. A timestamp outside a 5-minute window is rejected. A claim is released if processing throws, so a transient failure does not make the event permanently unprocessable. |
 | Paid-amount mismatch (pay `$1` for a `$2.4M` order) | The webhook compares `amount`, `currency` **and** order reference to the server-side snapshot. Any mismatch → the order is flagged for manual review, never auto-fulfilled. |
 | Secret leakage to the browser | PSP secrets are read only in server modules; no `NEXT_PUBLIC_` secret exists. A `tests/unit/env.test.ts` assertion fails the suite if a secret-shaped name gains a `NEXT_PUBLIC_` prefix. |
 | Card data touching our servers | **We never see a PAN.** The PSP's hosted checkout / tokenised fields own it. No card field exists in our schemas, and none may be added. |
@@ -147,7 +148,7 @@ shipping and total are derived server-side, every time, from the catalogue.
 | Deep/huge JSON | Zod schemas are closed (`.strict()`), arrays are `.max()`-bounded, strings are length-capped — a 10 000-line cart cannot be constructed. |
 | Unbounded pagination | `limit` clamped to 48, `offset` clamped; search results hard-capped. |
 | Algorithmic blowup in search | Substring matching over a bounded in-memory catalogue; the query is length-capped and the regex path is avoided entirely (no user-built regex). |
-| Memory growth from sessions/rate-limit state | Both stores sweep expired entries and are size-capped with LRU eviction. **[PRE-LAUNCH]** move both to Redis. |
+| Memory growth from sessions/rate-limit state | Every key carries a TTL and expires on its own; the memory driver is additionally size-capped with oldest-first eviction. Nothing sweeps on a timer, so an idle instance can be frozen. |
 
 ### 4.8 Information disclosure **[A2 · A6]**
 

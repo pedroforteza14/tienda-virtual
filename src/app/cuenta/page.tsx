@@ -42,7 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
  */
 export default async function AccountPage() {
   const sessionId = await currentSessionId();
-  const auth = getAuthSession(sessionId);
+  const auth = await getAuthSession(sessionId);
   const user = auth ? await userRepository().findById(auth.userId) : null;
   const orders = await listOwnedOrders(sessionId, 20);
 

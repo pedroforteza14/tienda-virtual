@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { site } from '@/config/site';
 import { catalog } from '@/server/catalog/repository';
 import { productPricing } from '@/server/pricing/pricing';
-import { toCardData } from '@/features/products/card-data';
+import { toCardDataMany } from '@/features/products/card-data';
 import { Hero, type HeroProduct } from '@/features/home/Hero';
 import { ProductRail, type RailPanel } from '@/features/home/ProductRail';
 import { FeaturedEditorial } from '@/features/home/FeaturedEditorial';
@@ -50,7 +50,7 @@ export const metadata: Metadata = buildMetadata({
  */
 export const dynamic = 'force-dynamic';
 
-export default function HomePage() {
+export default async function HomePage() {
   const repo = catalog();
 
   // The lead is the highest-ranked featured product, so editorial weight follows
@@ -80,12 +80,13 @@ export default function HomePage() {
   };
 
   const panels = buildRailPanels();
+  const featuredCards = await toCardDataMany(featured.slice(0, 4));
 
   return (
     <>
       <Hero product={hero} />
       <ProductRail panels={panels} />
-      <FeaturedEditorial products={featured.slice(0, 4).map(toCardData)} />
+      <FeaturedEditorial products={featuredCards} />
       <DiscoveryTeaser />
       <SeenInTheWild />
       <Trust />

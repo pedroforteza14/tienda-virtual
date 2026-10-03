@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { catalog } from '@/server/catalog/repository';
-import {
-  availableStock,
-  reserveAtomically,
-  release,
-  resetInventory,
-} from '@/server/orders/inventory';
+import { availableStock, release, reserve } from '@/server/orders/inventory';
+import { resetStore } from '@/server/store';
 import {
   cancelOrder,
   createOrder,
@@ -14,7 +10,7 @@ import {
   listOwnedOrders,
   settleOrder,
 } from '@/server/orders/order-service';
-import { newOrderReference, resetOrders, toOrderDTO } from '@/server/orders/order-repository';
+import { newOrderReference, toOrderDTO } from '@/server/orders/order-repository';
 import { createSessionId } from '@/server/security/session';
 import { OrderReferenceSchema } from '@/lib/validation/schemas';
 import type { Order, OrderCustomer, OrderShipping } from '@/types/commerce';
@@ -49,75 +45,69 @@ async function placeOrder(sessionId: string, sku: string, qty = 1) {
   return result.order;
 }
 
-beforeEach(() => {
-  resetInventory();
-  resetOrders();
-});
-afterEach(() => {
-  resetInventory();
-  resetOrders();
-});
+beforeEach(async () => resetStore());
+afterEach(async () => resetStore());
 
 /* -------------------------------------------------------------------------- */
 
 describe('inventory — the oversell race', () => {
-  it('reserves all lines or none', () => {
+  it('reserves all lines or none', async () => {
     const sku = stockedSku(3);
     const other = catalog()
       .listProducts()
       .flatMap((product) => product.variants)
       .find((variant) => variant.sku !== sku && variant.stock > 0)!;
 
-    const before = availableStock(sku);
+    const before = (await availableStock(sku));
     // The second line asks for more than exists, so neither may be committed.
-    const result = reserveAtomically([
+    const result = await reserve([
       { sku, qty: 1 },
       { sku: other.sku, qty: other.stock + 50 },
     ]);
 
     expect(result.ok).toBe(false);
-    expect(availableStock(sku)).toBe(before);
+    expect((await availableStock(sku))).toBe(before);
   });
 
-  it('cannot oversell across concurrent reservations', () => {
+  it('cannot oversell across concurrent reservations', async () => {
     const sku = stockedSku(2);
-    const stock = availableStock(sku);
+    const stock = (await availableStock(sku));
 
     // Take everything, then try again.
-    expect(reserveAtomically([{ sku, qty: stock }]).ok).toBe(true);
-    expect(availableStock(sku)).toBe(0);
+    expect((await reserve([{ sku, qty: stock }])).ok).toBe(true);
+    expect((await availableStock(sku))).toBe(0);
 
-    const second = reserveAtomically([{ sku, qty: 1 }]);
+    const second = await reserve([{ sku, qty: 1 }]);
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.available).toBe(0);
   });
 
-  it('holds under a burst of interleaved reservations', () => {
+  it('holds under a burst of interleaved reservations', async () => {
     const sku = stockedSku(2);
-    const stock = availableStock(sku);
+    const stock = (await availableStock(sku));
 
     let granted = 0;
     for (let i = 0; i < stock * 3; i += 1) {
-      if (reserveAtomically([{ sku, qty: 1 }]).ok) granted += 1;
+      if ((await reserve([{ sku, qty: 1 }])).ok) granted += 1;
     }
     // Never more units than existed. This is the oversell invariant.
     expect(granted).toBe(stock);
-    expect(availableStock(sku)).toBe(0);
+    expect((await availableStock(sku))).toBe(0);
   });
 
-  it('rejects a non-positive reservation', () => {
+  it('rejects a non-positive reservation', async () => {
     const sku = stockedSku(2);
-    expect(reserveAtomically([{ sku, qty: 0 }]).ok).toBe(false);
-    expect(reserveAtomically([{ sku, qty: -5 }]).ok).toBe(false);
+    expect((await reserve([{ sku, qty: 0 }])).ok).toBe(false);
+    expect((await reserve([{ sku, qty: -5 }])).ok).toBe(false);
   });
 
-  it('returns stock on release', () => {
+  it('returns stock on release', async () => {
     const sku = stockedSku(2);
-    const stock = availableStock(sku);
-    reserveAtomically([{ sku, qty: 2 }]);
-    expect(availableStock(sku)).toBe(stock - 2);
-    release([{ sku, qty: 2 }]);
-    expect(availableStock(sku)).toBe(stock);
+    const stock = (await availableStock(sku));
+    await reserve([{ sku, qty: 2 }]);
+    expect((await availableStock(sku))).toBe(stock - 2);
+    await release([{ sku, qty: 2 }]);
+    expect((await availableStock(sku))).toBe(stock);
   });
 });
 
@@ -127,14 +117,14 @@ describe('order creation', () => {
   it('computes totals server-side and reserves stock', async () => {
     const sku = stockedSku(2);
     const sessionId = createSessionId();
-    const before = availableStock(sku);
+    const before = (await availableStock(sku));
 
     const order = await placeOrder(sessionId, sku, 2);
 
     expect(order.totals.subtotal).toBe(catalog().resolveSku(sku)!.variant.priceList * 2);
     expect(order.totals.transferTotal).toBeLessThan(order.totals.cardTotal);
     expect(order.status).toBe('pending_payment');
-    expect(availableStock(sku)).toBe(before - 2);
+    expect((await availableStock(sku))).toBe(before - 2);
   });
 
   it('refuses an empty cart', async () => {
@@ -152,7 +142,7 @@ describe('order creation', () => {
 
   it('refuses an order for stock someone else already holds', async () => {
     const sku = stockedSku(2);
-    reserveAtomically([{ sku, qty: availableStock(sku) }]);
+    await reserve([{ sku, qty: await availableStock(sku) }]);
 
     const result = await createOrder({
       sessionId: createSessionId(),
@@ -168,7 +158,7 @@ describe('order creation', () => {
     expect(result.ok).toBe(false);
   });
 
-  it('generates unguessable, non-sequential references', () => {
+  it('generates unguessable, non-sequential references', async () => {
     const references = Array.from({ length: 500 }, () => newOrderReference());
     expect(new Set(references).size).toBe(500);
 
@@ -354,12 +344,12 @@ describe('settlement — amount verification', () => {
 describe('cancellation', () => {
   it('returns stock when a pending order is cancelled', async () => {
     const sku = stockedSku(3);
-    const before = availableStock(sku);
+    const before = (await availableStock(sku));
     const order = await placeOrder(createSessionId(), sku, 2);
-    expect(availableStock(sku)).toBe(before - 2);
+    expect((await availableStock(sku))).toBe(before - 2);
 
     expect(await cancelOrder(order.reference, 'test')).toBe(true);
-    expect(availableStock(sku)).toBe(before);
+    expect((await availableStock(sku))).toBe(before);
   });
 
   it('will not cancel an already settled order', async () => {

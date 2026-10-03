@@ -83,7 +83,7 @@ export function guarded<S extends z.ZodTypeAny | undefined = undefined>(
     const sessionId = sessionIdFromRequest(request);
 
     /* 1 — rate limit --------------------------------------------------------- */
-    const limit = rateLimit(options.bucket, clientKey(request, sessionId));
+    const limit = await rateLimit(options.bucket, clientKey(request, sessionId));
     const limitHeaders = rateLimitHeaders(limit);
     if (!limit.allowed) {
       logRateLimited(options.bucket, clientKey(request, sessionId), requestId);
@@ -122,7 +122,7 @@ export function guarded<S extends z.ZodTypeAny | undefined = undefined>(
     }
 
     /* 6 — authentication and authorization ----------------------------------- */
-    const auth = getAuthSession(sessionId);
+    const auth = await getAuthSession(sessionId);
     if ((options.requireAuth || options.role) && !auth) {
       return jsonError('unauthorized', { requestId, headers: limitHeaders });
     }

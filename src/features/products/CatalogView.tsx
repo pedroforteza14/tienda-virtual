@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { DEFAULT_PAGE_SIZE } from '@/config/constants';
 import { catalog } from '@/server/catalog/repository';
 import { productPricing } from '@/server/pricing/pricing';
-import { toCardData } from '@/features/products/card-data';
+import { toCardDataMany } from '@/features/products/card-data';
 import { ProductCard } from '@/features/products/ProductCard';
 import { CatalogFilters, type FilterOptionsData, type FilterState } from '@/features/products/CatalogFilters';
 import { Ledger } from '@/components/layout/Ledger';
@@ -21,7 +21,7 @@ type Query = z.infer<typeof CatalogQuerySchema>;
  * are HTML — which is why a listing of twelve products costs a fraction of what the
  * home page does.
  */
-export function CatalogView({
+export async function CatalogView({
   query,
   family,
   heading,
@@ -46,6 +46,9 @@ export function CatalogView({
     page: query.page,
     pageSize: query.pageSize || DEFAULT_PAGE_SIZE,
   });
+
+  // Every card's availability in one store round trip, not one per variant.
+  const cards = await toCardDataMany(items);
 
   const pageSize = query.pageSize || DEFAULT_PAGE_SIZE;
   const pages = Math.max(1, Math.ceil(total / pageSize));
@@ -107,10 +110,10 @@ export function CatalogView({
           </div>
         ) : (
           <ul className="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {items.map((product, index) => (
-              <li key={product.slug}>
+            {cards.map((card, index) => (
+              <li key={card.slug}>
                 <ProductCard
-                  product={toCardData(product)}
+                  product={card}
                   // The first row is above the fold; the rest lazy-load.
                   priority={index < 4}
                 />

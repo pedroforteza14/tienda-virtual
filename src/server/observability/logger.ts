@@ -136,6 +136,10 @@ export const logger = {
       | 'auth.logout'
       | 'authz.denied'
       | 'ratelimit.exceeded'
+      // The shared store refused a rate-limit write, so the request was allowed
+      // through uncounted. See the note in security/rate-limit.ts on why this
+      // fails open; the event is what makes that choice auditable.
+      | 'ratelimit.degraded'
       | 'csrf.rejected'
       | 'origin.rejected'
       | 'webhook.signature.invalid'
@@ -143,6 +147,9 @@ export const logger = {
       | 'webhook.amount.mismatch'
       | 'order.created'
       | 'order.paid'
+      // An order update lost every compare-and-set attempt. Benign once; a
+      // pattern of it means two writers are fighting over the same order.
+      | 'order.update.contended'
       | 'input.rejected'
       | 'body.too.large',
     context?: LogContext,

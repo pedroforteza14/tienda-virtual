@@ -69,7 +69,7 @@ export default async function OrderPage({
   if (!parsed.success) notFound();
 
   const sessionId = await currentSessionId();
-  const auth = getAuthSession(sessionId);
+  const auth = await getAuthSession(sessionId);
 
   const order = await getOwnedOrderDTO(parsed.data, sessionId, auth?.userId ?? null);
   // "Not yours" and "does not exist" are the same answer.

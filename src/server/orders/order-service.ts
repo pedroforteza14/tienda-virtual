@@ -7,7 +7,7 @@ import {
   orderRepository,
   toOrderDTO,
 } from '@/server/orders/order-repository';
-import { release, reserveAtomically } from '@/server/orders/inventory';
+import { release, reserve } from '@/server/orders/inventory';
 import { priceCart } from '@/server/pricing/pricing';
 import { ownerKey } from '@/server/security/session';
 import type { CartLineInput, Order, OrderCustomer, OrderDTO, OrderShipping, PaymentMethod } from '@/types/commerce';
@@ -50,7 +50,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
 
   // Re-price from the catalogue. This is the authoritative figure; the client's
   // view of the total is advisory and is never consulted.
-  const priced = priceCart(input.lines, {
+  const priced = await priceCart(input.lines, {
     promoCode: input.promoCode,
     zone: input.shipping.zone,
     paymentMethod: input.paymentMethod,
@@ -59,7 +59,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   if (priced.lines.length === 0) return { ok: false, reason: 'empty_cart' };
 
   // Re-check and commit stock atomically. See inventory.ts on the race.
-  const reservation = reserveAtomically(
+  const reservation = await reserve(
     priced.lines.map((line) => ({ sku: line.sku, qty: line.qty })),
   );
   if (!reservation.ok) {
@@ -175,71 +175,106 @@ export async function settleOrder(params: {
   provider: string;
 }): Promise<{ ok: true; status: 'paid' | 'review' } | { ok: false; reason: 'not_found' | 'already_settled' }> {
   const repo = orderRepository();
-  const order = await repo.findByReference(params.reference);
-  if (!order) return { ok: false, reason: 'not_found' };
 
-  if (order.status === 'paid' || order.status === 'review') {
+  /**
+   * The decision is made **inside** the mutation, not before it.
+   *
+   * It used to be a read, a status check, and then an update. Those three steps
+   * are not one step: two webhook deliveries on two instances both read
+   * `pending_payment`, both pass the check, and both settle — appending two
+   * payment events to one order. Compare-and-set alone does not help, because
+   * the loser simply re-reads and re-applies a mutation that was decided when
+   * the order was still pending.
+   *
+   * Making the check part of the mutation is what fixes it: on a retry the
+   * callback runs again against the *current* record, sees the order is already
+   * settled, and declines. Exactly one caller transitions it.
+   */
+  let outcome: 'paid' | 'review' | 'already_settled' | null = null;
+
+  const updated = await repo.update(params.reference, (current) => {
+    if (current.status === 'paid' || current.status === 'review') {
+      outcome = 'already_settled';
+      return current;
+    }
+
+    const expected = current.paymentMethod === 'transfer'
+      ? current.totals.transferTotal
+      : current.totals.cardTotal;
+
+    const amountMatches = params.amount === expected;
+    const currencyMatches = params.currency.toUpperCase() === 'ARS';
+    const status = amountMatches && currencyMatches ? 'paid' : 'review';
+    outcome = status;
+
+    if (status === 'review') {
+      logger.security('webhook.amount.mismatch', {
+        reference: current.reference,
+        expected,
+        received: params.amount,
+        currency: params.currency,
+        provider: params.provider,
+      });
+    }
+
+    const at = new Date().toISOString();
+    return {
+      ...current,
+      status,
+      updatedAt: at,
+      events: [
+        ...current.events,
+        {
+          at,
+          type: status === 'paid' ? 'payment.confirmed' : 'payment.amount_mismatch',
+          detail: `${params.provider}:${params.providerEventId}`,
+        },
+      ],
+    };
+  });
+
+  if (!updated) return { ok: false, reason: 'not_found' };
+  if (outcome === 'already_settled' || outcome === null) {
     return { ok: false, reason: 'already_settled' };
   }
 
-  const expected = order.paymentMethod === 'transfer'
-    ? order.totals.transferTotal
-    : order.totals.cardTotal;
-
-  const amountMatches = params.amount === expected;
-  const currencyMatches = params.currency.toUpperCase() === 'ARS';
-  const status = amountMatches && currencyMatches ? 'paid' : 'review';
-
-  if (status === 'review') {
-    logger.security('webhook.amount.mismatch', {
-      reference: order.reference,
-      expected,
-      received: params.amount,
-      currency: params.currency,
-      provider: params.provider,
-    });
-  }
-
-  const now = new Date().toISOString();
-  await repo.update(order.reference, (current) => ({
-    ...current,
-    status,
-    updatedAt: now,
-    events: [
-      ...current.events,
-      {
-        at: now,
-        type: status === 'paid' ? 'payment.confirmed' : 'payment.amount_mismatch',
-        detail: `${params.provider}:${params.providerEventId}`,
-      },
-    ],
-  }));
-
-  if (status === 'paid') {
+  if (outcome === 'paid') {
     logger.security('order.paid', {
-      reference: order.reference,
+      reference: updated.reference,
       amount: params.amount,
       provider: params.provider,
     });
   }
 
-  return { ok: true, status };
+  return { ok: true, status: outcome };
 }
 
-/** Cancel a pending order and return its stock. */
+/**
+ * Cancel a pending order and return its stock.
+ *
+ * The transition decides whether the stock is released, for the same reason
+ * `settleOrder` decides inside its mutation: two concurrent cancellations that
+ * both released would hand the same units back twice, and the shop would then
+ * believe it had stock it does not have. Only the caller that actually moved
+ * the order out of `pending_payment` releases anything.
+ */
 export async function cancelOrder(reference: string, reason: string): Promise<boolean> {
-  const repo = orderRepository();
-  const order = await repo.findByReference(reference);
-  if (!order || order.status !== 'pending_payment') return false;
+  let cancelled = false;
 
-  release(order.lines.map((line) => ({ sku: line.sku, qty: line.qty })));
+  const updated = await orderRepository().update(reference, (current) => {
+    if (current.status !== 'pending_payment') return current;
+    cancelled = true;
+    const at = new Date().toISOString();
+    return {
+      ...current,
+      status: 'cancelled',
+      updatedAt: at,
+      events: [...current.events, { at, type: 'order.cancelled', detail: reason }],
+    };
+  });
 
-  const now = new Date().toISOString();
-  await repo.update(reference, (current) => ({
-    ...current,
-    status: 'cancelled',
-    updatedAt: now,
-    events: [...current.events, { at: now, type: 'order.cancelled', detail: reason }],
-  }));
+  if (!updated || !cancelled) return false;
+
+  await release(updated.lines.map((line) => ({ sku: line.sku, qty: line.qty })));
   return true;
 }

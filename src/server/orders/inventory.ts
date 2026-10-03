@@ -1,11 +1,13 @@
 import { catalog } from '@/server/catalog/repository';
+import { store } from '@/server/store';
+import type { ReservationResult, StockLine } from '@/server/store/types';
 
 /**
  * Inventory with reservations.
  *
- * The catalogue is treated as read-only, so committed stock is tracked here as a
- * reservation layer on top of it: `available = catalogueStock - reserved`. Three
- * reasons this shape rather than mutating the catalogue:
+ * The catalogue is treated as read-only, so committed stock is tracked as a
+ * reservation layer on top of it: `available = catalogueStock - reserved`.
+ * Three reasons for this shape rather than mutating the catalogue:
  *
  *  - the catalogue stays a pure data source, so it can be swapped for a remote
  *    one without the order path changing;
@@ -13,71 +15,59 @@ import { catalog } from '@/server/catalog/repository';
  *  - it mirrors how a real system works, where the order service holds a
  *    reservation and the inventory system is the system of record.
  *
- * **The race condition is handled explicitly.** Check-then-decrement is the
- * classic oversell bug: two concurrent checkouts both read `stock = 1` and both
- * succeed. `reserveAtomically` does the check and the decrement inside one
- * synchronous block, which on a single-threaded event loop is genuinely atomic —
- * no `await` may appear between them.
- *
- * **[PRE-LAUNCH]** behind multiple replicas this must become a conditional
- * database write (`UPDATE … SET stock = stock - :n WHERE sku = :sku AND
- * stock >= :n`) and succeed only on a non-zero row count. An in-process
- * reservation map does not coordinate across processes.
+ * **The race condition is handled in the store, not here.** Check-then-decrement
+ * is the classic oversell bug: two concurrent checkouts both read `stock = 1`
+ * and both succeed. `reserveStock` is one indivisible operation — a block
+ * without an `await` in the memory driver, a Lua script in the Redis one — so
+ * there is no moment at which two callers can both have seen the same unit as
+ * free. This module only translates between catalogue SKUs and that call, and
+ * must not reintroduce a check of its own.
  */
 
-const reserved = new Map<string, number>();
+export type { ReservationResult };
+export type ReservationLine = StockLine;
 
-export function reservedUnits(sku: string): number {
-  return reserved.get(sku) ?? 0;
+export async function reservedUnits(sku: string): Promise<number> {
+  return store().reservedUnits(sku);
 }
 
 /** Units a customer can actually buy right now. */
-export function availableStock(sku: string): number {
+export async function availableStock(sku: string): Promise<number> {
   const resolved = catalog().resolveSku(sku);
   if (!resolved) return 0;
-  return Math.max(0, resolved.variant.stock - reservedUnits(sku));
+  return Math.max(0, resolved.variant.stock - (await store().reservedUnits(sku)));
 }
 
-export interface ReservationLine {
-  sku: string;
-  qty: number;
+/** Availability for several SKUs in one round trip, for listing pages. */
+export async function availableStockMany(
+  skus: readonly string[],
+): Promise<Map<string, number>> {
+  const held = await store().reservedUnitsMany(skus);
+  const out = new Map<string, number>();
+  for (const sku of skus) {
+    const resolved = catalog().resolveSku(sku);
+    out.set(sku, resolved ? Math.max(0, resolved.variant.stock - (held.get(sku) ?? 0)) : 0);
+  }
+  return out;
 }
-
-export type ReservationResult =
-  | { ok: true }
-  | { ok: false; sku: string; requested: number; available: number };
 
 /**
  * Reserve every line, or none.
  *
- * ⚠️ Intentionally synchronous, and must stay that way. An `await` between the
- * availability check and the decrement reopens the oversell race.
+ * An unknown SKU is reported as unavailable rather than skipped: a line the
+ * catalogue cannot resolve must never be quietly dropped from an order that
+ * then succeeds.
  */
-export function reserveAtomically(lines: readonly ReservationLine[]): ReservationResult {
-  // Pass 1: verify everything is available.
-  for (const line of lines) {
-    const available = availableStock(line.sku);
-    if (line.qty < 1 || line.qty > available) {
-      return { ok: false, sku: line.sku, requested: line.qty, available };
-    }
-  }
-  // Pass 2: commit. No suspension point between the two passes.
-  for (const line of lines) {
-    reserved.set(line.sku, reservedUnits(line.sku) + line.qty);
-  }
-  return { ok: true };
+export async function reserve(lines: readonly ReservationLine[]): Promise<ReservationResult> {
+  const requests = lines.map((line) => ({
+    sku: line.sku,
+    qty: line.qty,
+    stock: catalog().resolveSku(line.sku)?.variant.stock ?? 0,
+  }));
+  return store().reserveStock(requests);
 }
 
 /** Return stock to the pool: cancellation, expiry, or a failed payment. */
-export function release(lines: readonly ReservationLine[]): void {
-  for (const line of lines) {
-    const next = reservedUnits(line.sku) - line.qty;
-    if (next <= 0) reserved.delete(line.sku);
-    else reserved.set(line.sku, next);
-  }
-}
-
-/** Test-only. */
-export function resetInventory(): void {
-  reserved.clear();
+export async function release(lines: readonly ReservationLine[]): Promise<void> {
+  await store().releaseStock(lines);
 }

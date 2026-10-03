@@ -3,7 +3,7 @@ import { jsonError, jsonOk } from '@/lib/http/responses';
 import { logger, newRequestId } from '@/server/observability/logger';
 import { OrderReferenceSchema } from '@/lib/validation/schemas';
 import { cancelOrder, settleOrder } from '@/server/orders/order-service';
-import { alreadyProcessed, markProcessed } from '@/server/payments/webhook-log';
+import { claimEvent, releaseEvent } from '@/server/payments/webhook-log';
 import type { PaymentProvider, VerifiedWebhookEvent } from '@/server/payments/provider';
 import { rateLimit, rateLimitHeaders } from '@/server/security/rate-limit';
 
@@ -56,7 +56,7 @@ export function webhookRoute({ provider, resolve }: WebhookRouteOptions) {
   return async function POST(request: Request): Promise<Response> {
     const requestId = newRequestId();
 
-    const limit = rateLimit('webhook', `webhook:${provider.id}`);
+    const limit = await rateLimit('webhook', `webhook:${provider.id}`);
     if (!limit.allowed) {
       return jsonError('rate_limited', { requestId, headers: rateLimitHeaders(limit) });
     }
@@ -85,63 +85,72 @@ export function webhookRoute({ provider, resolve }: WebhookRouteOptions) {
 
     const event = verification.event;
 
-    if (alreadyProcessed(provider.id, event.id)) {
+    // Claim the event id BEFORE anything that changes an order, and claim it
+    // with a conditional write. A provider retrying aggressively can have two
+    // deliveries of the same event in flight on two instances; a read followed
+    // by a write would let both of them settle the order.
+    if (!(await claimEvent(provider.id, event.id))) {
       // Idempotent: acknowledge so the provider stops retrying, change nothing.
       logger.info('webhook.duplicate', { requestId, provider: provider.id, eventId: event.id });
       return jsonOk({ received: true, duplicate: true });
     }
 
     if (event.type === 'ignored') {
-      markProcessed(provider.id, event.id);
       return jsonOk({ received: true, ignored: true });
     }
 
-    // Resolve the authoritative figures where the notification does not carry them.
-    const authoritative = resolve ? await resolve(event) : null;
+    try {
+      // Resolve the authoritative figures where the notification does not carry them.
+      const authoritative = resolve ? await resolve(event) : null;
 
-    const reference = authoritative?.orderReference ?? event.orderReference;
-    const amount = authoritative?.amount ?? event.amount;
-    const currency = authoritative?.currency ?? event.currency;
-    const succeeded = authoritative
-      ? authoritative.status === 'approved' || authoritative.status === 'succeeded'
-      : event.type === 'payment.succeeded';
+      const reference = authoritative?.orderReference ?? event.orderReference;
+      const amount = authoritative?.amount ?? event.amount;
+      const currency = authoritative?.currency ?? event.currency;
+      const succeeded = authoritative
+        ? authoritative.status === 'approved' || authoritative.status === 'succeeded'
+        : event.type === 'payment.succeeded';
 
-    const parsedReference = reference ? OrderReferenceSchema.safeParse(reference) : null;
-    if (!parsedReference?.success) {
-      // Mark processed anyway: retrying will not make an unparseable reference
-      // parseable, and leaving it unmarked invites an infinite retry loop.
-      markProcessed(provider.id, event.id);
-      logger.warn('webhook.unknown_reference', { requestId, provider: provider.id, eventId: event.id });
-      return jsonOk({ received: true, matched: false });
-    }
+      const parsedReference = reference ? OrderReferenceSchema.safeParse(reference) : null;
+      if (!parsedReference?.success) {
+        // The claim is kept: retrying will not make an unparseable reference
+        // parseable, and releasing it would invite an infinite retry loop.
+        logger.warn('webhook.unknown_reference', { requestId, provider: provider.id, eventId: event.id });
+        return jsonOk({ received: true, matched: false });
+      }
 
-    markProcessed(provider.id, event.id);
+      if (!succeeded) {
+        await cancelOrder(parsedReference.data, `${provider.id}:payment_failed`);
+        return jsonOk({ received: true, settled: false });
+      }
 
-    if (!succeeded) {
-      await cancelOrder(parsedReference.data, `${provider.id}:payment_failed`);
-      return jsonOk({ received: true, settled: false });
-    }
-
-    const result = await settleOrder({
-      reference: parsedReference.data,
-      amount,
-      currency,
-      providerEventId: event.id,
-      provider: provider.id,
-    });
-
-    if (!result.ok) {
-      logger.warn('webhook.not_settled', {
-        requestId,
-        provider: provider.id,
-        reason: result.reason,
+      const result = await settleOrder({
         reference: parsedReference.data,
+        amount,
+        currency,
+        providerEventId: event.id,
+        provider: provider.id,
       });
-      // Still a 200: the provider delivered correctly, and retrying would not help.
-      return jsonOk({ received: true, settled: false });
-    }
 
-    return jsonOk({ received: true, settled: true, status: result.status });
+      if (!result.ok) {
+        logger.warn('webhook.not_settled', {
+          requestId,
+          provider: provider.id,
+          reason: result.reason,
+          reference: parsedReference.data,
+        });
+        // Still a 200: the provider delivered correctly, and retrying would not help.
+        return jsonOk({ received: true, settled: false });
+      }
+
+      return jsonOk({ received: true, settled: true, status: result.status });
+    } catch (error) {
+      // Give the claim back so the provider's retry can do the work. Holding it
+      // would turn a transient failure — the provider's API timing out, the
+      // store refusing a write — into a payment that is never recorded, which
+      // is the worst outcome available here.
+      await releaseEvent(provider.id, event.id);
+      throw error;
+    }
   };
 }
 

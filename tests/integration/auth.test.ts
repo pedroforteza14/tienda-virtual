@@ -1,15 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LOGIN_MAX_FAILURES } from '@/config/constants';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AUTH_SESSION_MAX_AGE_SECONDS, LOGIN_MAX_FAILURES } from '@/config/constants';
 import { login, signup } from '@/server/auth/auth-service';
-import { resetUsers, userRepository } from '@/server/auth/user-repository';
+import { userRepository } from '@/server/auth/user-repository';
 import {
   createSessionId,
   endAllSessionsForUser,
   endAuthSession,
   getAuthSession,
-  resetAuthSessions,
 } from '@/server/security/session';
-import { resetRateLimits, resetSecurityCounters } from '@/server/security/rate-limit';
+import { resetStore } from '@/server/store';
 
 /**
  * Authentication and authorization.
@@ -22,16 +21,8 @@ import { resetRateLimits, resetSecurityCounters } from '@/server/security/rate-l
 
 const PASSWORD = 'el perro corre rapido';
 
-beforeEach(() => {
-  resetUsers();
-  resetAuthSessions();
-  resetSecurityCounters();
-});
-afterEach(() => {
-  resetUsers();
-  resetAuthSessions();
-  resetSecurityCounters();
-});
+beforeEach(async () => resetStore());
+afterEach(async () => resetStore());
 
 async function register(email = 'ana@example.com') {
   const sessionId = createSessionId();
@@ -90,7 +81,7 @@ describe('login', () => {
     expect(result.user.id).toBe(user.id);
     // Session fixation defence: the privileged session is a fresh id.
     expect(result.session.sessionId).toBe(rotated);
-    expect(getAuthSession(rotated)?.userId).toBe(user.id);
+    expect((await getAuthSession(rotated))?.userId).toBe(user.id);
   });
 
   it('fails identically for a wrong password and an unknown account', async () => {
@@ -118,9 +109,7 @@ describe('login', () => {
     const known: number[] = [];
     const unknown: number[] = [];
     for (let i = 0; i < 5; i += 1) {
-      resetRateLimits();
       known.push(await timeOf('ana@example.com'));
-      resetRateLimits();
       unknown.push(await timeOf(`nobody${i}@example.com`));
     }
 
@@ -139,12 +128,10 @@ describe('login', () => {
     for (let i = 0; i < LOGIN_MAX_FAILURES; i += 1) {
       // Each attempt is a "different client" — the rate limiter is reset, so only
       // the per-account counter can stop this.
-      resetRateLimits();
       const result = await login('ana@example.com', 'wrong', createSessionId());
       expect(result.ok).toBe(false);
     }
 
-    resetRateLimits();
     const locked = await login('ana@example.com', PASSWORD, createSessionId());
     expect(locked).toMatchObject({ ok: false, reason: 'locked' });
   });
@@ -152,15 +139,12 @@ describe('login', () => {
   it('clears the failure counter on a successful login', async () => {
     await register();
     for (let i = 0; i < LOGIN_MAX_FAILURES - 1; i += 1) {
-      resetRateLimits();
       await login('ana@example.com', 'wrong', createSessionId());
     }
 
-    resetRateLimits();
     expect((await login('ana@example.com', PASSWORD, createSessionId())).ok).toBe(true);
 
     // And the next wrong attempt starts from one, not from the brink of lockout.
-    resetRateLimits();
     expect(await login('ana@example.com', 'wrong', createSessionId())).toMatchObject({
       reason: 'invalid',
     });
@@ -171,15 +155,12 @@ describe('login', () => {
     await register('beto@example.com');
 
     for (let i = 0; i < LOGIN_MAX_FAILURES; i += 1) {
-      resetRateLimits();
       await login('ana@example.com', 'wrong', createSessionId());
     }
 
-    resetRateLimits();
     expect(await login('ana@example.com', PASSWORD, createSessionId())).toMatchObject({
       reason: 'locked',
     });
-    resetRateLimits();
     expect((await login('beto@example.com', PASSWORD, createSessionId())).ok).toBe(true);
   });
 });
@@ -190,10 +171,10 @@ describe('session lifecycle', () => {
     const rotated = createSessionId();
     await login('ana@example.com', PASSWORD, rotated);
 
-    expect(getAuthSession(rotated)?.userId).toBe(user.id);
+    expect((await getAuthSession(rotated))?.userId).toBe(user.id);
     // An id that was never registered carries no identity, however well-formed.
-    expect(getAuthSession(createSessionId())).toBeNull();
-    expect(getAuthSession(null)).toBeNull();
+    expect(await getAuthSession(createSessionId())).toBeNull();
+    expect(await getAuthSession(null)).toBeNull();
   });
 
   it('invalidates server-side on logout, not just in the browser', async () => {
@@ -201,9 +182,9 @@ describe('session lifecycle', () => {
     await register();
     await login('ana@example.com', PASSWORD, rotated);
 
-    endAuthSession(rotated);
+    await endAuthSession(rotated);
     // Even if the cookie were replayed, the session no longer exists.
-    expect(getAuthSession(rotated)).toBeNull();
+    expect(await getAuthSession(rotated)).toBeNull();
   });
 
   it('can drop every session for a user at once', async () => {
@@ -214,21 +195,32 @@ describe('session lifecycle', () => {
     await login('ana@example.com', PASSWORD, a);
     await login('ana@example.com', PASSWORD, b);
 
-    expect(endAllSessionsForUser(user.id)).toBe(3);
+    expect(await endAllSessionsForUser(user.id)).toBe(3);
     for (const sessionId of [fromSignup, a, b]) {
-      expect(getAuthSession(sessionId)).toBeNull();
+      expect(await getAuthSession(sessionId)).toBeNull();
     }
   });
 
+  /**
+   * This used to reach into the returned object and move its `expiresAt` back,
+   * which worked only because the object *was* the stored record. It is now a
+   * copy parsed out of the store, so mutating it proves nothing. Moving the
+   * clock is both the honest version and a stronger one: it exercises the
+   * expiry check against a record the test never touched.
+   */
   it('expires a session past its lifetime', async () => {
-    const sessionId = createSessionId();
-    await register();
-    await login('ana@example.com', PASSWORD, sessionId);
+    vi.useFakeTimers();
+    try {
+      const sessionId = createSessionId();
+      await register();
+      await login('ana@example.com', PASSWORD, sessionId);
+      expect(await getAuthSession(sessionId)).not.toBeNull();
 
-    const session = getAuthSession(sessionId)!;
-    // Force expiry the way the clock would.
-    session.expiresAt = Date.now() - 1000;
-    expect(getAuthSession(sessionId)).toBeNull();
+      vi.advanceTimersByTime((AUTH_SESSION_MAX_AGE_SECONDS + 1) * 1000);
+      expect(await getAuthSession(sessionId)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a pre-login session id never becomes privileged', async () => {
@@ -240,8 +232,8 @@ describe('session lifecycle', () => {
     await login('ana@example.com', PASSWORD, rotated);
 
     // The id an attacker might have planted before login carries no identity.
-    expect(getAuthSession(preLogin)).toBeNull();
-    expect(getAuthSession(rotated)).not.toBeNull();
+    expect(await getAuthSession(preLogin)).toBeNull();
+    expect(await getAuthSession(rotated)).not.toBeNull();
   });
 });
 

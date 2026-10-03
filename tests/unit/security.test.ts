@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CSRF_HEADER, SESSION_MAX_AGE_SECONDS } from '@/config/constants';
 import {
   deriveCsrfToken,
@@ -23,9 +23,9 @@ import {
   failureCount,
   rateLimit,
   recordFailure,
-  resetSecurityCounters,
 } from '@/server/security/rate-limit';
 import { hashPassword, verifyPassword } from '@/server/auth/passwords';
+import { resetStore } from '@/server/store';
 import { __testing, logger } from '@/server/observability/logger';
 import { cookieName } from '@/server/security/cookies';
 
@@ -251,33 +251,44 @@ describe('cookie parsing', () => {
 /* -------------------------------------------------------------------------- */
 
 describe('rate limiting', () => {
-  beforeEach(() => resetSecurityCounters());
-  afterEach(() => resetSecurityCounters());
+  beforeEach(async () => resetStore());
+  afterEach(async () => {
+    vi.useRealTimers();
+    await resetStore();
+  });
 
-  it('allows up to the limit and then refuses with a Retry-After', () => {
+  it('allows up to the limit and then refuses with a Retry-After', async () => {
     const key = 'test-client';
     // RATE_LIMITS.login is [5, 300].
     for (let i = 0; i < 5; i += 1) {
-      expect(rateLimit('login', key).allowed, `attempt ${i + 1}`).toBe(true);
+      expect((await rateLimit('login', key)).allowed, `attempt ${i + 1}`).toBe(true);
     }
-    const blocked = rateLimit('login', key);
+    const blocked = await rateLimit('login', key);
     expect(blocked.allowed).toBe(false);
     expect(blocked.retryAfter).toBeGreaterThan(0);
     expect(blocked.remaining).toBe(0);
   });
 
-  it('keeps buckets independent per key and per route class', () => {
-    for (let i = 0; i < 5; i += 1) rateLimit('login', 'client-a');
-    expect(rateLimit('login', 'client-a').allowed).toBe(false);
-    expect(rateLimit('login', 'client-b').allowed).toBe(true);
-    expect(rateLimit('search', 'client-a').allowed).toBe(true);
+  it('keeps buckets independent per key and per route class', async () => {
+    for (let i = 0; i < 5; i += 1) await rateLimit('login', 'client-a');
+    expect((await rateLimit('login', 'client-a')).allowed).toBe(false);
+    expect((await rateLimit('login', 'client-b')).allowed).toBe(true);
+    expect((await rateLimit('search', 'client-a')).allowed).toBe(true);
   });
 
-  it('resets after the window', () => {
-    const now = Date.now();
-    for (let i = 0; i < 5; i += 1) rateLimit('login', 'client-c', now);
-    expect(rateLimit('login', 'client-c', now).allowed).toBe(false);
-    expect(rateLimit('login', 'client-c', now + 301_000).allowed).toBe(true);
+  /**
+   * The window is now the store's, not a parameter, so this moves the clock
+   * instead of passing a timestamp. That is a better test of the same property:
+   * it exercises the expiry the running system actually relies on, rather than
+   * arithmetic on an argument no caller supplies.
+   */
+  it('resets after the window', async () => {
+    vi.useFakeTimers();
+    for (let i = 0; i < 5; i += 1) await rateLimit('login', 'client-c');
+    expect((await rateLimit('login', 'client-c')).allowed).toBe(false);
+
+    vi.advanceTimersByTime(301_000);
+    expect((await rateLimit('login', 'client-c')).allowed).toBe(true);
   });
 
   it('keys on session as well as IP, so rotating the forged header shares a bucket', () => {
@@ -297,13 +308,19 @@ describe('rate limiting', () => {
     expect(b.endsWith(session)).toBe(true);
   });
 
-  it('tracks per-account failures independently of the request limiter', () => {
-    expect(failureCount('login:a@b.com')).toBe(0);
+  it('tracks per-account failures independently of the request limiter', async () => {
+    expect(await failureCount('login:a@b.com')).toBe(0);
     for (let i = 1; i <= 3; i += 1) {
-      expect(recordFailure('login:a@b.com', 900)).toBe(i);
+      expect(await recordFailure('login:a@b.com', 900)).toBe(i);
     }
-    expect(failureCount('login:a@b.com')).toBe(3);
-    expect(failureCount('login:other@b.com')).toBe(0);
+    expect(await failureCount('login:a@b.com')).toBe(3);
+    expect(await failureCount('login:other@b.com')).toBe(0);
+
+    // Exhausting the request limiter for this client must not touch the
+    // per-account counter: they are different controls, and an attacker who
+    // rotates IP addresses resets only the first one.
+    for (let i = 0; i < 10; i += 1) await rateLimit('login', 'noisy-client');
+    expect(await failureCount('login:a@b.com')).toBe(3);
   });
 });
 

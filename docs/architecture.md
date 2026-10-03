@@ -54,10 +54,45 @@ schema parsing before any handler runs. Per-route security is security that gets
 route added next quarter.
 
 ### Repository interfaces over a database
-`CatalogRepository`, `UserRepository`, `OrderRepository` are in-memory today. They exist so that the
-mock data is a *fixture*, not an architecture. Swapping in a real source is an implementation change
-behind an interface the rest of the app already talks to. `docs/threat-model.md` and `SECURITY.md`
-both mark the gaps explicitly rather than pretending they are not there.
+`CatalogRepository`, `UserRepository`, `OrderRepository` exist so that the mock data is a *fixture*,
+not an architecture. Swapping in a real source is an implementation change behind an interface the
+rest of the app already talks to. `docs/threat-model.md` and `SECURITY.md` both mark the remaining
+gaps explicitly rather than pretending they are not there.
+
+### One shared store, two drivers
+Every piece of mutable server state — rate-limit counters, login lockouts, authenticated sessions,
+users, orders, stock reservations, the processed-webhook log — goes through `CommerceStore`
+(`src/server/store/`). `STORE_DRIVER` picks the implementation: `memory` for one process, `upstash`
+for a shared Redis over its REST API.
+
+This is not a performance decision, it is a correctness one. Those stores were module-level `Map`s,
+which is right for one process and **wrong for every serverless platform**, where consecutive
+requests may be served by different instances with their own empty memory. The failure is not
+subtle: you complete checkout on one instance, the confirmation page is rendered by another, and it
+has never heard of your order. Sessions drop at random. The rate limiter counts to
+`limit × instances`. Stock is reserved per instance, so the shop oversells by a factor of however
+many are running.
+
+The interface is deliberately operation-shaped rather than a generic `get`/`set`, because the
+interesting part is atomicity and a key/value interface pushes that back onto callers, where it
+cannot be done correctly over a network:
+
+| Operation | Guarantee | Memory driver | Redis driver |
+| --- | --- | --- | --- |
+| `reserveStock` | Check and commit, all lines or none | A block with no `await` in it | One Lua script |
+| `compareAndSet` | Replace only if unchanged | Same | One Lua script |
+| `countInWindow` | Increment and expiry set together | Same | One Lua script |
+
+`tests/unit/store-contract.test.ts` runs one suite against **both** drivers, with the Redis half
+talking RESP to a real `redis-server`, so the Lua is executed by Redis rather than by a stub. The
+application cannot be correct on a laptop and wrong on Vercel because of a difference nobody wrote
+down. `tests/integration/shared-store.test.ts` goes further and drives two store objects over two
+connections to one database — the relationship two serverless instances actually have — then creates
+an order through one and reads it through the other.
+
+REST rather than a Redis client because a serverless function may be frozen between requests and
+killed without notice: a pooled TCP client either leaks connections or pays a handshake on every
+cold start. A stateless HTTP API has nothing to pool.
 
 ### Dynamic rendering everywhere
 Not the original plan. Pages were static, with the cart fetched client-side to keep them that way.
@@ -69,7 +104,8 @@ Two things forced the change, and both are worth knowing:
    prerendered build against the strict policy and the browser refused every script — the site was
    completely non-interactive in production, and every test, type check and lint passed.
 
-The cost is server rendering per request, which for an in-memory catalogue is a few milliseconds.
+The cost is server rendering per request: a few milliseconds for the catalogue, which is static
+data in the process, plus one store round trip per page that shows availability.
 
 ### Procedural SVG instead of 3D or photography
 Reasoned at length in `docs/creative-direction.md` §8. Briefly: no licensed assets exist, an

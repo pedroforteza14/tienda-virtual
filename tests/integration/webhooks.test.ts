@@ -5,11 +5,9 @@ import { POST as mockWebhook } from '@/app/api/webhooks/mock/route';
 import { signMockWebhook } from '@/server/payments/mock-provider';
 import { stripeProvider } from '@/server/payments/stripe-provider';
 import { mercadoPagoProvider } from '@/server/payments/mercadopago-provider';
-import { resetWebhookLog } from '@/server/payments/webhook-log';
+import { resetStore } from '@/server/store';
 import { createOrder } from '@/server/orders/order-service';
-import { orderRepository, resetOrders } from '@/server/orders/order-repository';
-import { resetInventory } from '@/server/orders/inventory';
-import { resetSecurityCounters } from '@/server/security/rate-limit';
+import { orderRepository } from '@/server/orders/order-repository';
 import { createSessionId } from '@/server/security/session';
 
 /**
@@ -56,18 +54,8 @@ function signedPost(body: unknown, timestamp = Date.now()): Request {
   return post(body, signMockWebhook(JSON.stringify(body), timestamp));
 }
 
-beforeEach(() => {
-  resetInventory();
-  resetOrders();
-  resetWebhookLog();
-  resetSecurityCounters();
-});
-afterEach(() => {
-  resetInventory();
-  resetOrders();
-  resetWebhookLog();
-  resetSecurityCounters();
-});
+beforeEach(async () => resetStore());
+afterEach(async () => resetStore());
 
 /* -------------------------------------------------------------------------- */
 

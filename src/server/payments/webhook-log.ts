@@ -1,3 +1,5 @@
+import { store } from '@/server/store';
+
 /**
  * Processed-webhook log, for idempotency and replay rejection.
  *
@@ -6,48 +8,48 @@
  * settles a cancelled order. Recording the provider's event id and refusing to
  * process it twice is what makes the handler idempotent.
  *
- * **[PRE-LAUNCH]** must be a table with a unique constraint on
- * `(provider, event_id)`, so idempotency holds across replicas and restarts. An
- * in-memory set gives neither.
+ * `claimEvent` is a single conditional write rather than a read followed by a
+ * write, and that is the whole correctness argument: a provider that retries
+ * aggressively can have two deliveries of the same event in flight at once, on
+ * two instances. With a check and a separate mark, both read "not seen" and both
+ * settle the order. With a conditional write, exactly one claim succeeds.
+ *
+ * The ids expire on their own, well past any provider's retry window, so the
+ * log cannot grow without bound and nothing has to sweep it.
  */
 
-interface Entry {
-  at: number;
-}
-
-const seen = new Map<string, Entry>();
-const MAX_ENTRIES = 50_000;
-/** Keep ids well beyond any provider's retry window. */
-const TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/** Seven days — longer than any provider's retry schedule. */
+const TTL_SECONDS = 7 * 24 * 60 * 60;
 
 function key(provider: string, eventId: string): string {
-  return `${provider}:${eventId}`;
+  return `webhook:${provider}:${eventId}`;
 }
 
-export function alreadyProcessed(provider: string, eventId: string, now = Date.now()): boolean {
-  const entry = seen.get(key(provider, eventId));
-  if (!entry) return false;
-  if (now - entry.at > TTL_MS) {
-    seen.delete(key(provider, eventId));
-    return false;
-  }
-  return true;
+/**
+ * Claim an event id for processing.
+ *
+ * @returns true if this caller may process it; false if it was already claimed.
+ */
+export async function claimEvent(provider: string, eventId: string): Promise<boolean> {
+  return store().set(key(provider, eventId), '1', {
+    ttlSeconds: TTL_SECONDS,
+    ifAbsent: true,
+  });
 }
 
-export function markProcessed(provider: string, eventId: string, now = Date.now()): void {
-  if (seen.size >= MAX_ENTRIES) {
-    for (const [existing, entry] of seen) {
-      if (now - entry.at > TTL_MS) seen.delete(existing);
-    }
-    if (seen.size >= MAX_ENTRIES) {
-      const oldest = seen.keys().next().value;
-      if (oldest) seen.delete(oldest);
-    }
-  }
-  seen.set(key(provider, eventId), { at: now });
+/**
+ * Release a claim.
+ *
+ * Used when processing failed in a way the provider should retry. Without this,
+ * a transient failure (the store accepted the claim, then the order write threw)
+ * would make the event permanently unprocessable: every retry would be refused
+ * as a duplicate of an attempt that never actually did anything.
+ */
+export async function releaseEvent(provider: string, eventId: string): Promise<void> {
+  await store().delete(key(provider, eventId));
 }
 
-/** Test-only. */
-export function resetWebhookLog(): void {
-  seen.clear();
+/** Whether an id has been claimed. For diagnostics and tests, not the hot path. */
+export async function alreadyProcessed(provider: string, eventId: string): Promise<boolean> {
+  return (await store().get(key(provider, eventId))) !== null;
 }

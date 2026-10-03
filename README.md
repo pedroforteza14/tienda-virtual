@@ -33,7 +33,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 | --- | --- |
 | `npm run dev` | Development server |
 | `npm run build` / `start` | Production build and server |
-| `npm run verify` | typecheck → lint → 266 unit/integration tests → production build |
+| `npm run verify` | typecheck → lint → 318 unit/integration tests → production build |
 | `npm run test` | Vitest (unit + integration) |
 | `npm run test:e2e` | Playwright — 220 tests: shopping, accessibility, visual QA |
 | `npm audit` | Dependency audit. Currently **0 vulnerabilities** |
@@ -56,6 +56,36 @@ blocked by this environment's network policy, so the visual direction is *not* d
 account — it is argued from the reference set and from Argentine retail convention.
 [`docs/creative-direction.md`](docs/creative-direction.md) §0 explains what to re-fit once the
 account is reachable: the brand decisions live in ~80 lines of CSS and one data file.
+
+---
+
+## Running it on Vercel (or anything serverless)
+
+Set **`STORE_DRIVER=upstash`**. This is not a tuning knob; with the default `memory` driver the shop
+looks fine and is not. Each request may be served by a different instance with its own empty memory,
+so an order created by one is invisible to the next — you complete checkout and the confirmation
+page 404s — logins drop at random, the rate limiter counts to `limit × instances`, and stock is
+reserved per instance, so the shop oversells.
+
+1. Create a database at [console.upstash.com](https://console.upstash.com) and copy its REST URL and
+   token. Set its eviction policy to `noeviction`: an evicted key here is a lost order.
+2. Set the environment variables:
+
+```bash
+SESSION_SECRET=…            # required; the server refuses to start without it
+NEXT_PUBLIC_SITE_URL=https://your-domain
+STORE_DRIVER=upstash
+UPSTASH_REDIS_REST_URL=…
+UPSTASH_REDIS_REST_TOKEN=…  # server-only — never prefix it NEXT_PUBLIC_
+PAYMENT_PROVIDER=mock
+NEXT_PUBLIC_ALLOW_INDEXING=false   # until it is the real shop
+```
+
+The app boots with `memory` and warns loudly in production; with `upstash` set and either credential
+missing it refuses to start rather than falling back to a driver that would quietly lose orders.
+
+Every page is `force-dynamic` (a CSP nonce cannot exist in a prerendered file, and stock would be
+frozen at build time), so there is nothing to configure for ISR.
 
 ---
 
@@ -112,7 +142,11 @@ collects no address, atomic stock reservation, and order expiry.
 **Payments** — a provider interface with mock, Mercado Pago and Stripe adapters. Hosted checkout
 only, so no card data ever reaches this origin.
 
-**Quality** — 266 unit and integration tests, 220 browser tests across desktop and mobile covering
+**Deployable to a serverless host** — sessions, users, orders, stock reservations, the webhook log
+and the rate-limit counters all live behind one `CommerceStore` interface with two drivers. See
+below.
+
+**Quality** — 318 unit and integration tests, 220 browser tests across desktop and mobile covering
 the purchase path, accessibility (landmarks, focus management, keyboard, reduced motion) and visual
 QA (overflow, clipping, tap targets, layout shift) at all six required viewports.
 

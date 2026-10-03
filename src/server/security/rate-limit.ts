@@ -1,21 +1,33 @@
 import { RATE_LIMITS, type RateLimitBucket } from '@/config/constants';
 import { env } from '@/config/env';
 import { logger } from '@/server/observability/logger';
+import { store } from '@/server/store';
 
 /**
  * Fixed-window rate limiting.
  *
- * **Known limitation, stated up front:** the in-memory driver counts per
- * process. Behind more than one replica, the effective limit is
- * `limit × replicas`. That is correct for a single-instance deployment and a
- * deliberate stub otherwise — `env()` warns about it at boot in production, and
- * `docs/SECURITY.md` lists the Redis swap as a pre-launch item. The interface is
- * shaped so that swap is a one-file change.
+ * The counters live in the shared store, so the limit is the limit regardless
+ * of how many instances are serving. With the memory driver it is still
+ * per-process — `env()` warns about that at boot — but the code path is the
+ * same one production runs, rather than a stub that gets swapped at the last
+ * minute.
  *
- * A fixed window (rather than a token bucket) is chosen because the thing we are
- * defending against — credential stuffing, scripted checkout — cares about
+ * A fixed window (rather than a token bucket) is chosen because the thing we
+ * are defending against — credential stuffing, scripted checkout — cares about
  * "attempts per 5 minutes", and a fixed window is trivial to reason about when
  * reading a log line.
+ *
+ * ## What happens when the store is unreachable
+ *
+ * It fails **open**, loudly: the request is allowed and a `ratelimit.degraded`
+ * security event is logged. This is the uncomfortable choice and it is
+ * deliberate. Failing closed would turn a Redis blip into a total outage —
+ * every page, including the ones that never write anything. Meanwhile the paths
+ * an attacker would want to flood (login, signup, checkout) *also* need the
+ * store to do anything at all: with Redis down there is no session to create,
+ * no order to write and no user to read, so flooding them achieves nothing
+ * beyond what the outage already achieves. The window where this is exploitable
+ * is one where the shop is already not working.
  */
 
 export interface RateLimitResult {
@@ -28,60 +40,37 @@ export interface RateLimitResult {
   retryAfter: number;
 }
 
-interface Counter {
-  count: number;
-  resetAt: number;
-}
-
-/** Bounded so a flood of distinct keys cannot exhaust memory. */
-const MAX_ENTRIES = 20_000;
-const store = new Map<string, Counter>();
-
-function sweep(now: number): void {
-  for (const [key, counter] of store) {
-    if (counter.resetAt <= now) store.delete(key);
-  }
-  if (store.size <= MAX_ENTRIES) return;
-  // Still too big: drop oldest-inserted entries. Map preserves insertion order.
-  const excess = store.size - MAX_ENTRIES;
-  let dropped = 0;
-  for (const key of store.keys()) {
-    store.delete(key);
-    if (++dropped >= excess) break;
-  }
-}
-
-export function rateLimit(
+export async function rateLimit(
   bucket: RateLimitBucket,
   key: string,
-  now = Date.now(),
-): RateLimitResult {
+): Promise<RateLimitResult> {
   const [limit, windowSeconds] = RATE_LIMITS[bucket];
   const windowMs = windowSeconds * 1000;
-  const composite = `${bucket}:${key}`;
 
-  // Amortised cleanup: cheap, and avoids a timer that would keep a serverless
-  // instance alive.
-  if (store.size > 256 && Math.random() < 0.02) sweep(now);
-
-  const existing = store.get(composite);
-
-  if (!existing || existing.resetAt <= now) {
-    const resetAt = now + windowMs;
-    store.set(composite, { count: 1, resetAt });
-    return { allowed: true, limit, remaining: limit - 1, resetAt, retryAfter: 0 };
+  try {
+    const { count, resetAt } = await store().countInWindow(`rl:${bucket}:${key}`, windowMs);
+    const allowed = count <= limit;
+    return {
+      allowed,
+      limit,
+      remaining: Math.max(0, limit - count),
+      resetAt,
+      retryAfter: allowed ? 0 : Math.max(1, Math.ceil((resetAt - Date.now()) / 1000)),
+    };
+  } catch (error) {
+    logger.security('ratelimit.degraded', {
+      bucket,
+      driver: env().STORE_DRIVER,
+      reason: error instanceof Error ? error.name : 'unknown',
+    });
+    return {
+      allowed: true,
+      limit,
+      remaining: limit,
+      resetAt: Date.now() + windowMs,
+      retryAfter: 0,
+    };
   }
-
-  existing.count += 1;
-  const allowed = existing.count <= limit;
-
-  return {
-    allowed,
-    limit,
-    remaining: Math.max(0, limit - existing.count),
-    resetAt: existing.resetAt,
-    retryAfter: allowed ? 0 : Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
-  };
 }
 
 /**
@@ -89,50 +78,17 @@ export function rateLimit(
  * request limiter because it is keyed on an account rather than a client, and
  * must survive the attacker rotating IPs.
  */
-const failures = new Map<string, Counter>();
-
-export function recordFailure(key: string, lockoutSeconds: number, now = Date.now()): number {
-  const existing = failures.get(key);
-  if (!existing || existing.resetAt <= now) {
-    failures.set(key, { count: 1, resetAt: now + lockoutSeconds * 1000 });
-    return 1;
-  }
-  existing.count += 1;
-  return existing.count;
+export async function recordFailure(key: string, lockoutSeconds: number): Promise<number> {
+  const { count } = await store().countInWindow(`lockout:${key}`, lockoutSeconds * 1000);
+  return count;
 }
 
-export function failureCount(key: string, now = Date.now()): number {
-  const existing = failures.get(key);
-  if (!existing || existing.resetAt <= now) return 0;
-  return existing.count;
+export async function failureCount(key: string): Promise<number> {
+  return store().readWindow(`lockout:${key}`);
 }
 
-export function clearFailures(key: string): void {
-  failures.delete(key);
-}
-
-/**
- * Test-only helpers.
- *
- * Deliberately **two** functions. The request limiter and the per-account failure
- * counter are different controls defending against different things, and a single
- * reset that clears both made it impossible to write the test that matters: "an
- * attacker rotates IP addresses (resetting the request limiter) — does the account
- * lockout still stop them?" With one combined reset, that test silently cleared the
- * very counter it was meant to exercise and passed for the wrong reason.
- */
-export function resetRateLimits(): void {
-  store.clear();
-}
-
-export function resetLoginFailures(): void {
-  failures.clear();
-}
-
-/** Both, for a test's `beforeEach`. */
-export function resetSecurityCounters(): void {
-  resetRateLimits();
-  resetLoginFailures();
+export async function clearFailures(key: string): Promise<void> {
+  await store().delete(`lockout:${key}`);
 }
 
 /**
@@ -161,5 +117,5 @@ export function rateLimitHeaders(result: RateLimitResult): Record<string, string
 }
 
 export function logRateLimited(bucket: RateLimitBucket, key: string, requestId: string): void {
-  logger.security('ratelimit.exceeded', { bucket, key, requestId, driver: env().RATE_LIMIT_DRIVER });
+  logger.security('ratelimit.exceeded', { bucket, key, requestId, driver: env().STORE_DRIVER });
 }

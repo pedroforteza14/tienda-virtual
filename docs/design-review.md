@@ -38,10 +38,19 @@ were found by looking at the running thing.
 | 19 | Media-query rules lost to Tailwind utilities | The fix for #18 silently did nothing; panels never resized | Measuring the fix |
 | 20 | Mobile PDP put two paragraphs of prose above the price | Narrative between the visitor and the sale | Screenshot review |
 | 21 | `headers()` returned `headers: []` outside production | **`next dev` refused to boot** — "Invalid header found" | Running `npm run dev` for the first time |
+| 22 | `settleOrder` checked the status *before* the update, not inside it | Two concurrent webhook deliveries both settled one order, appending two payment events | A test that drove two store instances at one Redis |
 
 Several of the later ones are worth noting as a pattern: **each fix exposed the next defect.** #1
 was hiding #17 (no JavaScript ran, so the drawer could never stay open); #18's fix created #19. A
 single pass would have found one of them.
+
+#22 is the same shape as #1 and #17: a defect that only exists in a configuration the tests did not
+run. The status check sat outside the mutation, which is correct as long as exactly one process ever
+updates an order — true of every test that had ever been written, and false the moment two instances
+share a database. Compare-and-set alone did not save it, because the loser re-read the record and
+re-applied a decision it had made while the order was still pending. Moving the check inside the
+mutation is what fixes it, and the test that found it is the one that models the deployment rather
+than the module.
 
 #21 is the sharpest instance of the same lesson in a different direction. The whole verification
 pipeline — `npm run verify` and the Playwright web server alike — runs the app through

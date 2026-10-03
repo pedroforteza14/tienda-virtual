@@ -11,9 +11,7 @@ import { POST as login } from '@/app/api/auth/login/route';
 import { GET as orderRead } from '@/app/api/orders/[reference]/route';
 import { cookieName } from '@/server/security/cookies';
 import { createSessionId, csrfToken, signSessionId } from '@/server/security/session';
-import { resetSecurityCounters } from '@/server/security/rate-limit';
-import { resetInventory } from '@/server/orders/inventory';
-import { resetOrders } from '@/server/orders/order-repository';
+import { resetStore } from '@/server/store';
 
 /**
  * The `guarded()` pipeline, exercised through the real route handlers.
@@ -83,16 +81,10 @@ function build(options: RequestOptions = {}): Request {
   });
 }
 
-beforeEach(() => {
-  resetSecurityCounters();
-  resetInventory();
-  resetOrders();
-});
-afterEach(() => {
-  resetSecurityCounters();
-  resetInventory();
-  resetOrders();
-});
+// One store now holds counters, orders and reservations, so one reset covers
+// what used to need three.
+beforeEach(async () => resetStore());
+afterEach(async () => resetStore());
 
 /* -------------------------------------------------------------------------- */
 /* PRICE MANIPULATION — the primary threat                                    */

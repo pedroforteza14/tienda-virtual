@@ -5,9 +5,9 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { breadcrumbSchema, productSchema } from '@/lib/seo/schema';
 import { catalog } from '@/server/catalog/repository';
-import { availableStock } from '@/server/orders/inventory';
+import { availableStockMany } from '@/server/orders/inventory';
 import { variantPricing } from '@/server/pricing/pricing';
-import { toCardData } from '@/features/products/card-data';
+import { toCardDataMany } from '@/features/products/card-data';
 import {
   ProductConfigurator,
   type ConfiguratorVariant,
@@ -84,13 +84,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
    * Prices are computed **here, on the server**, for every variant, and passed to
    * the configurator as data. The client displays them; it never derives them.
    */
+  const availability = await availableStockMany(product.variants.map((variant) => variant.sku));
+
   const variants: ConfiguratorVariant[] = product.variants.map((variant) => {
     const pricing = variantPricing(variant.priceList);
     return {
       sku: variant.sku,
       colorId: variant.colorId,
       tier: variant.storage ?? variant.size ?? null,
-      stock: availableStock(variant.sku),
+      stock: availability.get(variant.sku) ?? 0,
       list: pricing.list,
       transfer: pricing.transfer,
       instalment: pricing.instalment,
@@ -112,6 +114,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .map((sku) => catalog().resolveSku(sku)?.product)
     .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate))
     .filter((candidate) => candidate.slug !== product.slug);
+
+  // The two card grids below this page's fold, priced and stocked in one pass
+  // each rather than one lookup per variant.
+  const [pairCards, relatedCards] = await Promise.all([
+    toCardDataMany(pairs.slice(0, 3)),
+    toCardDataMany(related),
+  ]);
 
   return (
     <div className="relative">
@@ -217,9 +226,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </h2>
           </Reveal>
           <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {pairs.slice(0, 3).map((candidate) => (
-              <li key={candidate.slug}>
-                <ProductCard product={toCardData(candidate)} />
+            {pairCards.map((card) => (
+              <li key={card.slug}>
+                <ProductCard product={card} />
               </li>
             ))}
           </ul>
@@ -235,9 +244,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </h2>
           </Reveal>
           <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {related.map((candidate) => (
-              <li key={candidate.slug}>
-                <ProductCard product={toCardData(candidate)} />
+            {relatedCards.map((card) => (
+              <li key={card.slug}>
+                <ProductCard product={card} />
               </li>
             ))}
           </ul>

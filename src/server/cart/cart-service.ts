@@ -96,7 +96,7 @@ async function mutate(
   options: PriceCartOptions = {},
 ): Promise<PricedCart> {
   const next = change(await readState());
-  const priced = priceCart(next.lines, { promoCode: next.promoCode, ...options });
+  const priced = await priceCart(next.lines, { promoCode: next.promoCode, ...options });
 
   await writeState({
     lines: priced.lines.map((line) => ({ sku: line.sku, qty: line.qty })),

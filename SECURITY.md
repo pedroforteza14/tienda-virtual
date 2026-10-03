@@ -150,7 +150,9 @@ Next pins a vulnerable version internally; removing it reintroduces four advisor
 | `PAYMENT_PROVIDER` | No | `mock` \| `mercadopago` \| `stripe`. |
 | `MERCADOPAGO_ACCESS_TOKEN` / `_WEBHOOK_SECRET` | If used | Server-only. Production refuses to start without the webhook secret. |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | If used | Server-only. Same. |
-| `RATE_LIMIT_DRIVER` | No | `memory` is per-instance and warns at boot in production. |
+| `STORE_DRIVER` | **Serverless** | `memory` \| `upstash`. Holds sessions, users, orders, stock reservations, the webhook log and rate-limit counters. `memory` is per-instance and warns at boot in production; on a serverless or multi-replica host it must be `upstash`. |
+| `UPSTASH_REDIS_REST_URL` / `_TOKEN` | If `upstash` | Server-only; production refuses to start with the driver set and either missing. Never prefix the token `NEXT_PUBLIC_`. |
+| `STORE_PREFIX` | No | Key namespace, so one Redis database can serve staging and production. |
 | `LOG_LEVEL` | No | `debug` \| `info` \| `warn` \| `error`. |
 
 `.env.example` is the template. `.env*` files are gitignored. No secret is committed.
@@ -161,18 +163,32 @@ Next pins a vulnerable version internally; removing it reintroduces four advisor
 
 These are tracked honestly rather than quietly. Each is a gap, not a preference.
 
-1. **Durable storage.** Users, sessions, orders and the webhook log are in-memory and vanish on
-   restart. Repository interfaces exist so the swap is mechanical.
-2. **Shared rate limiting and idempotency.** Both are per-process; behind multiple replicas the
-   effective limit is `limit × replicas` and webhook idempotency does not hold. Move to Redis, and
-   make the webhook log a table with a unique constraint on `(provider, event_id)`.
-3. **Database-level stock.** The in-process mutex must become a conditional
-   `UPDATE … WHERE stock >= :n` that succeeds only on a non-zero row count.
+1. **Durability, not just sharing.** With `STORE_DRIVER=upstash` the state is shared across
+   instances and survives a restart, which is what makes the shop correct on a serverless host.
+   It is still Redis: an eviction policy that drops keys under memory pressure would drop orders.
+   Before real money, orders belong in a database with a backup, and Redis keeps the things it is
+   good at — counters, locks, sessions. Set the database's eviction policy to `noeviction` in the
+   meantime.
+2. **A unique constraint on the webhook log.** Idempotency currently rests on `SET NX`, which is
+   atomic and correct, but the claim expires after seven days and a key eviction would un-claim it
+   early. A table with a unique constraint on `(provider, event_id)` cannot.
+3. **Stock in the same transaction as the order.** Reservation and order creation are two
+   operations today: the reservation is atomic, and the order write that follows it is a separate
+   round trip. A crash between them leaks a reservation until the order expires — bounded, and
+   self-healing, but not the same as one transaction.
 4. **Argon2id** in place of scrypt, once a native dependency is acceptable.
 5. **Real legal review.** The copy in `src/data/legal.ts` is a draft; Ley 24.240 and Ley 25.326
    compliance needs a lawyer.
 6. **Bot management and WAF** at the platform layer; no CAPTCHA or bot scoring exists.
 7. **A log sink with alerting** on the `security.*` events, which are emitted but go nowhere.
+   `ratelimit.degraded` is the one to alert on first: it means the store refused a rate-limit write
+   and the request was let through uncounted. The limiter fails **open** by design — see
+   `src/server/security/rate-limit.ts` for why a store outage should not also be a total outage —
+   and that choice is only defensible if someone finds out it happened.
+8. **A deploy against a real Upstash endpoint.** The Redis driver is tested against a real
+   `redis-server` (the Lua scripts are executed by Redis, not by a stub) and the REST transport is
+   tested with a supplied `fetch`, but no request in this repository has ever reached Upstash
+   itself. Expect to find something in the first deploy that neither test could.
 8. **Automated dependency updates** (Dependabot/Renovate) and `npm audit signatures` in CI.
 9. **2FA**, before any admin role exists.
 

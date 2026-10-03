@@ -32,9 +32,20 @@ const schema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
-  RATE_LIMIT_DRIVER: z.enum(['memory', 'upstash']).default('memory'),
+  /**
+   * Where mutable server state lives. `memory` is one process; `upstash` is a
+   * shared Redis and the only correct answer on a platform that runs more than
+   * one instance of this app — which includes every serverless host.
+   *
+   * This was `RATE_LIMIT_DRIVER` while rate limiting was the only shared thing.
+   * It now also decides where sessions, users, orders, stock reservations and
+   * the webhook log are kept, so the old name said something false.
+   */
+  STORE_DRIVER: z.enum(['memory', 'upstash']).default('memory'),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+  /** Key namespace, so one Redis database can serve several environments. */
+  STORE_PREFIX: z.string().min(1).max(64).default('owner:'),
 
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
@@ -75,9 +86,10 @@ function load(): Env {
     MERCADOPAGO_WEBHOOK_SECRET: process.env.MERCADOPAGO_WEBHOOK_SECRET || undefined,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || undefined,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || undefined,
-    RATE_LIMIT_DRIVER: process.env.RATE_LIMIT_DRIVER,
+    STORE_DRIVER: process.env.STORE_DRIVER,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL || undefined,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN || undefined,
+    STORE_PREFIX: process.env.STORE_PREFIX || undefined,
     LOG_LEVEL: process.env.LOG_LEVEL,
   });
 
@@ -141,12 +153,24 @@ function load(): Env {
     if (env.PAYMENT_PROVIDER === 'stripe' && !env.STRIPE_WEBHOOK_SECRET) {
       throw new Error('STRIPE_WEBHOOK_SECRET is required: unverified webhooks are refused');
     }
-    if (env.RATE_LIMIT_DRIVER === 'memory') {
-      // A warning, not a failure: a single-instance deploy is legitimate.
-      // Behind more than one replica it is a real gap. See docs/SECURITY.md.
+    if (env.STORE_DRIVER === 'upstash' && (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN)) {
+      throw new Error(
+        'STORE_DRIVER=upstash requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN',
+      );
+    }
+    if (env.STORE_DRIVER === 'memory') {
+      // A warning, not a failure: a single-instance deploy is legitimate, and
+      // refusing to boot would strand someone running this on one VPS.
+      //
+      // On a serverless host it is not a gap, it is a broken shop: each request
+      // may reach a different instance with its own empty memory, so an order
+      // created by one is invisible to the next, logins drop at random and the
+      // rate limiter counts to `limit × instances`. docs/architecture.md says
+      // which stores are affected.
       console.warn(
-        '[owner] RATE_LIMIT_DRIVER=memory is per-instance only and does not ' +
-          'rate-limit correctly behind multiple replicas.',
+        '[owner] STORE_DRIVER=memory keeps sessions, orders, stock and rate ' +
+          'limits in one process. Correct for a single instance; on a ' +
+          'serverless or multi-replica host set STORE_DRIVER=upstash.',
       );
     }
   }

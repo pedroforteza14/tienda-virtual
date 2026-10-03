@@ -4,7 +4,7 @@ import { site } from '@/config/site';
 import { add, applyDiscount, multiply, percentOf, splitInstalments, subtract } from '@/lib/money';
 import type { Centavos } from '@/lib/money';
 import { catalog } from '@/server/catalog/repository';
-import { availableStock } from '@/server/orders/inventory';
+import { availableStockMany } from '@/server/orders/inventory';
 import type { Product } from '@/types/catalog';
 import type {
   CartLineInput,
@@ -174,13 +174,22 @@ function normaliseLines(lines: readonly CartLineInput[]): {
 
 /**
  * Price a cart. The only function allowed to produce a monetary total.
+ *
+ * Asynchronous because availability now comes from the shared store rather than
+ * a local `Map`. The whole cart's availability is fetched in **one** round trip
+ * before the loop: a lookup per line would be N network calls on a page that
+ * renders on every cart change, and — worse — would read stock at N slightly
+ * different moments, so a cart could be priced against a state that never
+ * existed at any single instant.
  */
-export function priceCart(
+export async function priceCart(
   lines: readonly CartLineInput[],
   options: PriceCartOptions = {},
-): PricedCart {
+): Promise<PricedCart> {
   const repo = catalog();
   const { normalised, notices } = normaliseLines(lines);
+
+  const availability = await availableStockMany(normalised.map((line) => line.sku));
 
   const priced: PricedCartLine[] = [];
   const familySubtotals = new Map<string, Centavos>();
@@ -198,7 +207,7 @@ export function priceCart(
 
     // Availability is catalogue stock minus units already reserved by pending
     // orders, so a cart can never be priced against stock someone else holds.
-    const stock = availableStock(variant.sku);
+    const stock = availability.get(variant.sku) ?? 0;
 
     if (stock <= 0) {
       notices.push(`${product.name} se quedó sin stock y lo quitamos del carrito.`);

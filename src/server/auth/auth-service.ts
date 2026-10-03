@@ -42,7 +42,7 @@ export async function login(
 
   // Per-account lockout, in addition to the per-client rate limit. The limiter
   // alone is bypassable by rotating IPs; this is not.
-  if (failureCount(key) >= LOGIN_MAX_FAILURES) {
+  if ((await failureCount(key)) >= LOGIN_MAX_FAILURES) {
     logger.security('auth.login.locked', { email });
     return { ok: false, reason: 'locked', retryAfter: LOGIN_LOCKOUT_SECONDS };
   }
@@ -55,19 +55,19 @@ export async function login(
   const { valid, needsRehash } = await verifyPassword(password, stored);
 
   if (!user || !valid) {
-    const failures = recordFailure(key, LOGIN_LOCKOUT_SECONDS);
+    const failures = await recordFailure(key, LOGIN_LOCKOUT_SECONDS);
     logger.security('auth.login.failure', { email, failures });
     return { ok: false, reason: 'invalid' };
   }
 
-  clearFailures(key);
+  await clearFailures(key);
 
   if (needsRehash) {
     // Transparent upgrade when KDF parameters have been raised since signup.
     await repo.updatePasswordHash(user.id, await hashPassword(password));
   }
 
-  const session = startAuthSession(newSessionId, user.id, user.role);
+  const session = await startAuthSession(newSessionId, user.id, user.role);
   logger.security('auth.login.success', { userId: user.id, email });
 
   return { ok: true, user, session };
@@ -88,7 +88,7 @@ export async function signup(
 
   try {
     const user = await repo.create({ name, email, passwordHash });
-    const session = startAuthSession(newSessionId, user.id, user.role);
+    const session = await startAuthSession(newSessionId, user.id, user.role);
     logger.security('auth.signup', { userId: user.id, email });
     return { ok: true, user, session };
   } catch (error) {
