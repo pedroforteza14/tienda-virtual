@@ -31,11 +31,20 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
+    // `STORE_DRIVER` is overridable so the same suite can be run against the
+    // Redis driver (see the note in README on verifying a deploy), rather than
+    // only ever exercising the in-process one.
     env: {
       SESSION_SECRET: 'ZTJlLW9ubHktc2VjcmV0LW5vdC1mb3ItcHJvZHVjdGlvbi11c2UtMDE=',
       NEXT_PUBLIC_SITE_URL: baseURL,
+      ...(process.env.UPSTASH_REDIS_REST_URL
+        ? {
+            UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+            UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? '',
+          }
+        : {}),
       PAYMENT_PROVIDER: 'mock',
-      RATE_LIMIT_DRIVER: 'memory',
+      STORE_DRIVER: process.env.PLAYWRIGHT_STORE_DRIVER ?? 'memory',
       LOG_LEVEL: 'error',
     },
   },

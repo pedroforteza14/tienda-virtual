@@ -67,9 +67,18 @@ so an order created by one is invisible to the next — you complete checkout an
 page 404s — logins drop at random, the rate limiter counts to `limit × instances`, and stock is
 reserved per instance, so the shop oversells.
 
-1. Create a database at [console.upstash.com](https://console.upstash.com) and copy its REST URL and
+1. Import the repository in Vercel (**Add New → Project**) and pick this branch. The framework is
+   detected; the default build and output settings are correct, and there is nothing to override.
+2. Create a database at [console.upstash.com](https://console.upstash.com) and copy its REST URL and
    token. Set its eviction policy to `noeviction`: an evicted key here is a lost order.
-2. Set the environment variables:
+3. **Put the database and the functions in the same region.** Every page is dynamic and most do at
+   least one store round trip, so this is not a micro-optimisation: a function in Washington talking
+   to a database in Frankfurt pays ~100 ms on every page, serially, before anything renders. Pick
+   the Upstash region closest to your buyers, then set the matching region in Vercel under
+   **Project Settings → Functions → Function Region** (the dashboard lists the valid ones; for
+   Argentina, São Paulo is the nearest). Do this before the first deploy — changing it later means
+   a redeploy anyway.
+4. Set the environment variables:
 
 ```bash
 SESSION_SECRET=…            # required; the server refuses to start without it
@@ -81,8 +90,15 @@ PAYMENT_PROVIDER=mock
 NEXT_PUBLIC_ALLOW_INDEXING=false   # until it is the real shop
 ```
 
+Generate the secret with the command under **Quick start** rather than inventing one, and set it in
+Vercel's own environment-variable UI — not in a file, and not pasted into a chat or an issue.
+
 The app boots with `memory` and warns loudly in production; with `upstash` set and either credential
 missing it refuses to start rather than falling back to a driver that would quietly lose orders.
+
+Once it is up, the thing worth checking first is the one that used to be broken: complete a checkout,
+then reload the confirmation page a few times. Each reload may be served by a different instance, so
+if the order survives, the shared store is doing its job.
 
 Every page is `force-dynamic` (a CSP nonce cannot exist in a prerendered file, and stock would be
 frozen at build time), so there is nothing to configure for ISR.

@@ -185,10 +185,14 @@ These are tracked honestly rather than quietly. Each is a gap, not a preference.
    and the request was let through uncounted. The limiter fails **open** by design — see
    `src/server/security/rate-limit.ts` for why a store outage should not also be a total outage —
    and that choice is only defensible if someone finds out it happened.
-8. **A deploy against a real Upstash endpoint.** The Redis driver is tested against a real
-   `redis-server` (the Lua scripts are executed by Redis, not by a stub) and the REST transport is
-   tested with a supplied `fetch`, but no request in this repository has ever reached Upstash
-   itself. Expect to find something in the first deploy that neither test could.
+8. **A deploy against Upstash itself.** How far the verification goes today: the Lua scripts are
+   executed by a real `redis-server`; the REST transport's envelope is tested with a supplied
+   `fetch`; and the full 220-test browser suite has been run against a production build with
+   `STORE_DRIVER=upstash`, talking REST to a local service that relays to that `redis-server` —
+   so the whole purchase path, orders and stock reservations included, has gone through the Redis
+   driver end to end. What is still untested is Upstash's own endpoint: its TLS, its auth, its
+   rate limits, its latency and whatever its REST implementation does differently. Expect the
+   first deploy to surface something none of that could.
 8. **Automated dependency updates** (Dependabot/Renovate) and `npm audit signatures` in CI.
 9. **2FA**, before any admin role exists.
 
