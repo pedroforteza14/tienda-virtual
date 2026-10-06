@@ -69,6 +69,9 @@ export function CartDrawer() {
                   <ProductRender
                     kind={line.render as RenderKind}
                     color={{ hex: line.colorHex, hexAccent: line.colorHex, name: line.colorName }}
+                    photography={line.photography}
+                    // size-20 box.
+                    sizes="80px"
                     productName={line.productName}
                     className="h-16 w-16"
                   />

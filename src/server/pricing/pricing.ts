@@ -5,6 +5,7 @@ import { add, applyDiscount, multiply, percentOf, splitInstalments, subtract } f
 import type { Centavos } from '@/lib/money';
 import { catalog } from '@/server/catalog/repository';
 import { availableStockMany } from '@/server/orders/inventory';
+import { photoFor } from '@/lib/photos';
 import type { Product } from '@/types/catalog';
 import type {
   CartLineInput,
@@ -236,6 +237,7 @@ export async function priceCart(
       colorName: color?.name ?? '',
       colorHex: color?.hex ?? '#888888',
       render: product.render,
+      ...(photoFor(product, variant) ? { photography: photoFor(product, variant) } : {}),
       unitPrice,
       lineTotal,
       stock,

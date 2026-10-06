@@ -142,6 +142,9 @@ export default async function OrderPage({
                   <ProductRender
                     kind={line.render as RenderKind}
                     color={{ hex: line.colorHex, hexAccent: line.colorHex, name: line.colorName }}
+                    photography={line.photography}
+                    // size-16 box.
+                    sizes="64px"
                     productName={line.productName}
                     className="h-12 w-12"
                   />

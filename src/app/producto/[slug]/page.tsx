@@ -6,6 +6,7 @@ import { JsonLd } from '@/lib/seo/json-ld';
 import { breadcrumbSchema, productSchema } from '@/lib/seo/schema';
 import { catalog } from '@/server/catalog/repository';
 import { availableStockMany } from '@/server/orders/inventory';
+import { photoFor } from '@/lib/photos';
 import { variantPricing } from '@/server/pricing/pricing';
 import { toCardDataMany } from '@/features/products/card-data';
 import {
@@ -93,6 +94,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       colorId: variant.colorId,
       tier: variant.storage ?? variant.size ?? null,
       stock: availability.get(variant.sku) ?? 0,
+      ...(photoFor(product, variant) ? { photography: photoFor(product, variant) } : {}),
       list: pricing.list,
       transfer: pricing.transfer,
       instalment: pricing.instalment,

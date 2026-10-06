@@ -33,7 +33,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 | --- | --- |
 | `npm run dev` | Development server |
 | `npm run build` / `start` | Production build and server |
-| `npm run verify` | typecheck → lint → 318 unit/integration tests → production build |
+| `npm run verify` | typecheck → lint → 323 unit/integration tests → production build |
 | `npm run test` | Vitest (unit + integration) |
 | `npm run test:e2e` | Playwright — 220 tests: shopping, accessibility, visual QA |
 | `npm audit` | Dependency audit. Currently **0 vulnerabilities** |
@@ -147,6 +147,10 @@ See [`SECURITY.md`](SECURITY.md) for the rest, including what is **not** done ye
 
 ## What works today
 
+**Catálogo** — 44 productos en seis familias (iPhone, Mac, iPad, Watch, AirPods y accesorios),
+cada uno dibujado como un render SVG procedural. Las fotografías son opcionales y se enchufan por
+dato, sin tocar componentes: ver `src/data/README.md`.
+
 **Storefront** — cinematic home with a scroll narrative, catalogue with no-JS filters, product pages
 with a live configurator, a two-question device finder, full-screen search, a cart drawer, a
 four-step checkout, order confirmation, accounts, and policy pages.
@@ -162,7 +166,7 @@ only, so no card data ever reaches this origin.
 and the rate-limit counters all live behind one `CommerceStore` interface with two drivers. See
 below.
 
-**Quality** — 318 unit and integration tests, 220 browser tests across desktop and mobile covering
+**Quality** — 323 unit and integration tests, 220 browser tests across desktop and mobile covering
 the purchase path, accessibility (landmarks, focus management, keyboard, reduced motion) and visual
 QA (overflow, clipping, tap targets, layout shift) at all six required viewports.
 

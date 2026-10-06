@@ -60,6 +60,8 @@ export function FeaturedEditorial({ products }: { products: ProductCardData[] })
               <ProductRender
                 kind={lead.render}
                 color={lead.colors[0] ?? { hex: '#888', hexAccent: '#999', name: '' }}
+                photography={lead.photography}
+                sizes="(max-width: 64rem) 90vw, 40rem"
                 productName={lead.name}
                 className="h-[min(52vh,26rem)] w-auto transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out-owner)] group-hover/product:-translate-y-2"
                 specular
@@ -108,6 +110,8 @@ export function FeaturedEditorial({ products }: { products: ProductCardData[] })
                     <ProductRender
                       kind={product.render}
                       color={product.colors[0] ?? { hex: '#888', hexAccent: '#999', name: '' }}
+                      photography={product.photography}
+                      sizes="(max-width: 40rem) 45vw, 18rem"
                       productName={product.name}
                       className="h-[86%] w-auto"
                       specular

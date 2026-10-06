@@ -40,6 +40,7 @@ export const GET = guarded(
           family: repo.getCategory(product.family)?.name ?? product.family,
           tagline: product.tagline,
           render: product.render,
+          ...(product.photography ? { photography: product.photography } : {}),
           color: {
             hex: product.colors[0]?.hex ?? '#888',
             hexAccent: product.colors[0]?.hexAccent ?? '#999',

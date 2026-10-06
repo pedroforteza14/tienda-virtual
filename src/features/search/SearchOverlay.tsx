@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils/cn';
 import { Overlay } from '@/components/ui/Overlay';
 import { ProductRender } from '@/components/product/ProductRender';
 import { useCommerce } from '@/features/cart/CommerceProvider';
-import type { RenderKind } from '@/types/catalog';
+import type { Photo, RenderKind } from '@/types/catalog';
 
 /**
  * Full-screen search.
@@ -171,6 +171,9 @@ export function SearchOverlay() {
                     <ProductRender
                       kind={result.render as RenderKind}
                       color={result.color}
+                      photography={result.photography}
+                      // size-14 box.
+                      sizes="56px"
                       productName={result.name}
                       className="h-12 w-12"
                     />
@@ -242,6 +245,7 @@ interface SearchResult {
   family: string;
   tagline: string;
   render: string;
+  photography?: Photo;
   color: { hex: string; hexAccent: string; name: string; light: boolean };
   from: number;
   fromTransfer: number;

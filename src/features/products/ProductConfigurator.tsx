@@ -12,7 +12,7 @@ import { QuantityStepper } from '@/components/ui/QuantityStepper';
 import { Magnetic } from '@/components/motion/Magnetic';
 import { ProductRender } from '@/components/product/ProductRender';
 import { useCommerce } from '@/features/cart/CommerceProvider';
-import type { RenderKind } from '@/types/catalog';
+import type { Photo, RenderKind } from '@/types/catalog';
 
 /**
  * ============================================================================
@@ -46,6 +46,8 @@ export interface ConfiguratorVariant {
   transfer: number;
   instalment: number;
   instalmentCount: number;
+  /** This colourway's photograph, when the catalogue has one. */
+  photography?: Photo;
 }
 
 export interface ConfiguratorProps {
@@ -139,6 +141,9 @@ export function ProductConfigurator({
               <ProductRender
                 kind={render}
                 color={color}
+                // Per-variant, so changing the colour changes the photograph —
+                // which is the entire reason a configurator exists.
+                photography={variant?.photography}
                 productName={name}
                 className="h-full w-auto"
                 specular

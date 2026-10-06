@@ -4,7 +4,7 @@ import { useId } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import { defsId, shade } from '@/components/product/shade';
-import type { Colorway, RenderKind } from '@/types/catalog';
+import type { Colorway, Photo, RenderKind } from '@/types/catalog';
 
 /**
  * ============================================================================
@@ -54,13 +54,27 @@ import type { Colorway, RenderKind } from '@/types/catalog';
  * component code on routes that show products.
  */
 
+/** The PDP hero: nearly full width on a phone, a column on a desktop. */
+const HERO_SIZES = '(max-width: 48rem) 90vw, (max-width: 80rem) 45vw, 36rem';
+
 export interface ProductRenderProps {
   kind: RenderKind;
   color: Pick<Colorway, 'hex' | 'hexAccent' | 'name'> & { light?: boolean };
   /** Product name, for the accessible label. */
   productName: string;
-  photography?: { src: string; alt: string; width: number; height: number } | undefined;
+  photography?: Photo | undefined;
   className?: string;
+  /**
+   * The `sizes` attribute for a photograph.
+   *
+   * Defaulted for the hero, because that is the call site where getting it
+   * wrong is most expensive. It is a prop because a single hard-coded value is
+   * worse than none: with the hero's string on an 80px cart thumbnail, the
+   * browser picks the 1920px candidate for a box the size of a postage stamp
+   * and the drawer costs more to open than the page did to load. Every
+   * thumbnail below passes its own.
+   */
+  sizes?: string;
   /** Adds the scroll/hover specular sweep layer. Off for small thumbnails. */
   specular?: boolean;
   priority?: boolean;
@@ -72,6 +86,7 @@ export function ProductRender({
   productName,
   photography,
   className,
+  sizes = HERO_SIZES,
   specular = false,
   priority = false,
 }: ProductRenderProps) {
@@ -86,7 +101,7 @@ export function ProductRender({
           alt={photography.alt}
           width={photography.width}
           height={photography.height}
-          sizes="(max-width: 48rem) 90vw, (max-width: 80rem) 45vw, 36rem"
+          sizes={sizes}
           priority={priority}
           className="h-full w-full object-contain"
         />
@@ -194,6 +209,10 @@ const VIEWBOX: Record<RenderKind, string> = {
   case: '0 0 300 620',
   puck: '0 0 420 340',
   stylus: '0 0 180 600',
+  headphones: '0 0 420 460',
+  display: '0 0 620 500',
+  speaker: '0 0 320 400',
+  keyboard: '0 0 620 300',
 };
 
 interface DrawProps {
@@ -508,6 +527,153 @@ function stylus({ id }: DrawProps) {
   );
 }
 
+/**
+ * Over-ear headphones, three-quarter on.
+ *
+ * Drawn as one visible earcup with the headband arcing away behind it, rather
+ * than the symmetrical front view every stock illustration uses: the symmetric
+ * version reads as a flat pictogram, and the whole point of these renders is
+ * that an object has a side the light does not reach.
+ */
+function headphones({ id }: DrawProps) {
+  return (
+    <>
+      <Ground id={id} cx={210} cy={424} rx={140} ry={16} />
+
+      {/* Headband canopy — the mesh spans between two rails. */}
+      <path
+        d="M96 232 Q96 70 210 70 Q324 70 324 232"
+        stroke={`url(#rail-${id})`}
+        strokeWidth="16"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M110 224 Q110 92 210 92 Q310 92 310 224"
+        stroke={`url(#body-${id})`}
+        strokeWidth="26"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M110 224 Q110 92 210 92 Q310 92 310 224"
+        stroke="#000"
+        strokeOpacity="0.12"
+        strokeWidth="26"
+        strokeDasharray="2 6"
+        fill="none"
+        strokeLinecap="round"
+      />
+
+      {/* Telescoping stems */}
+      <rect x="100" y="214" width="14" height="52" rx="7" fill={`url(#rail-${id})`} />
+      <rect x="306" y="214" width="14" height="52" rx="7" fill={`url(#rail-${id})`} />
+
+      {/* Far earcup, mostly hidden */}
+      <rect x="288" y="252" width="56" height="112" rx="28" fill={`url(#rail-${id})`} opacity="0.85" />
+
+      {/* Near earcup */}
+      <rect x="74" y="248" width="130" height="124" rx="40" fill={`url(#body-${id})`} />
+      <rect x="74" y="248" width="130" height="124" rx="40" fill={`url(#glass-${id})`} />
+      {/* Cushion, seen edge-on */}
+      <rect x="196" y="268" width="22" height="84" rx="11" fill="#000" opacity="0.14" />
+      {/* Digital Crown */}
+      <rect x="150" y="238" width="30" height="12" rx="6" fill={`url(#rail-${id})`} />
+      <path d="M152 240 H178" stroke="#000" strokeOpacity="0.25" strokeWidth="1" />
+      <path d="M86 256 Q74 262 74 282" stroke="#fff" strokeOpacity="0.2" strokeWidth="1.2" fill="none" />
+    </>
+  );
+}
+
+/** A standalone display: all screen, thin bezel, a stand that reads as metal. */
+function display({ id }: DrawProps) {
+  return (
+    <>
+      <Ground id={id} cx={310} cy={472} rx={200} ry={20} />
+
+      <rect x="36" y="24" width="548" height="330" rx="14" fill={`url(#body-${id})`} />
+      <rect x="48" y="36" width="524" height="296" rx="4" fill={`url(#screen-${id})`} />
+      <rect x="48" y="36" width="524" height="296" rx="4" fill={`url(#glass-${id})`} />
+      {/* Camera */}
+      <circle cx="310" cy="30" r="2.5" fill="#000" opacity="0.5" />
+
+      {/* Stand: a tilting arm on a weighted foot. */}
+      <path d="M286 354 H334 L330 408 H290 Z" fill={`url(#rail-${id})`} />
+      <path d="M232 408 H388 Q398 408 398 416 V424 Q398 432 388 432 H232 Q222 432 222 424 V416 Q222 408 232 408 Z" fill={`url(#rail-${id})`} />
+      <path d="M46 30 Q36 36 36 52" stroke="#fff" strokeOpacity="0.2" strokeWidth="1.2" fill="none" />
+    </>
+  );
+}
+
+/** A fabric-wrapped speaker: a rounded cylinder with a lit top surface. */
+function speaker({ id }: DrawProps) {
+  return (
+    <>
+      <Ground id={id} cx={160} cy={354} rx={100} ry={14} />
+
+      {/* Body */}
+      <path d="M44 150 Q44 54 160 54 Q276 54 276 150 V268 Q276 340 160 340 Q44 340 44 268 Z" fill={`url(#body-${id})`} />
+      <path d="M44 150 Q44 54 160 54 Q276 54 276 150 V268 Q276 340 160 340 Q44 340 44 268 Z" fill={`url(#glass-${id})`} />
+      {/* Mesh, as a horizontal weave rather than a dot grid — cheaper and reads better small. */}
+      {Array.from({ length: 11 }, (_, row) => (
+        <path
+          key={row}
+          d={`M58 ${104 + row * 20} Q160 ${112 + row * 20} 262 ${104 + row * 20}`}
+          stroke="#000"
+          strokeOpacity="0.08"
+          strokeWidth="3"
+          fill="none"
+        />
+      ))}
+      {/* Backlit top control surface */}
+      <ellipse cx="160" cy="76" rx="92" ry="30" fill="#000" opacity="0.18" />
+      <ellipse cx="160" cy="74" rx="78" ry="24" fill={`url(#screen-${id})`} />
+      <path d="M134 74 H148 M172 74 H186" stroke="#fff" strokeOpacity="0.45" strokeWidth="3" strokeLinecap="round" />
+      <path d="M60 128 Q48 140 48 164" stroke="#fff" strokeOpacity="0.18" strokeWidth="1.2" fill="none" />
+    </>
+  );
+}
+
+/** A low-profile keyboard, seen from slightly above. */
+function keyboard({ id }: DrawProps) {
+  const keys: React.ReactElement[] = [];
+  const rows = [16, 15, 14, 13, 8];
+  rows.forEach((count, row) => {
+    const y = 96 + row * 34;
+    for (let col = 0; col < count; col += 1) {
+      // The bottom row is a wide spacebar flanked by modifiers.
+      const wide = row === 4 && col === 4;
+      const x = 64 + col * 32 + (row === 4 && col > 4 ? 128 : 0);
+      keys.push(
+        <rect
+          key={`${row}-${col}`}
+          x={x}
+          y={y}
+          width={wide ? 150 : 26}
+          height={24}
+          rx={5}
+          fill="#000"
+          opacity="0.14"
+        />,
+      );
+    }
+  });
+
+  return (
+    <>
+      <Ground id={id} cx={310} cy={268} rx={250} ry={14} />
+      {/* Deck, with a visible back edge so it is not a flat rectangle. */}
+      <path d="M46 72 L574 72 L590 236 Q590 250 574 250 H46 Q30 250 30 236 Z" fill={`url(#body-${id})`} />
+      <path d="M46 72 L574 72 L578 86 H42 Z" fill={`url(#rail-${id})`} />
+      <path d="M46 72 L574 72 L590 236 Q590 250 574 250 H46 Q30 250 30 236 Z" fill={`url(#glass-${id})`} />
+      {keys}
+      {/* Touch ID */}
+      <rect x="546" y="96" width="26" height="24" rx="12" fill="#000" opacity="0.22" />
+      <path d="M44 78 Q32 88 32 104" stroke="#fff" strokeOpacity="0.2" strokeWidth="1.2" fill="none" />
+    </>
+  );
+}
+
 const DRAWINGS: Record<RenderKind, (props: DrawProps) => React.ReactElement> = {
   phone: (props) => phone(props),
   'phone-pro': (props) => phone({ ...props, pro: true }),
@@ -520,4 +686,8 @@ const DRAWINGS: Record<RenderKind, (props: DrawProps) => React.ReactElement> = {
   case: phoneCase,
   puck,
   stylus,
+  headphones,
+  display,
+  speaker,
+  keyboard,
 };

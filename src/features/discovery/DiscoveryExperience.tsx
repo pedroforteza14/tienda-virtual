@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/http/client';
 import { cn } from '@/lib/utils/cn';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { ProductRender } from '@/components/product/ProductRender';
-import { USE_CASES, type RenderKind, type UseCase } from '@/types/catalog';
+import { USE_CASES, type Photo, type RenderKind, type UseCase } from '@/types/catalog';
 
 /**
  * ============================================================================
@@ -59,6 +59,7 @@ interface Recommendation {
   summary: string;
   highlights: string[];
   render: RenderKind;
+  photography?: Photo;
   color: { hex: string; hexAccent: string; name: string; light: boolean };
   from: number;
   fromTransfer: number;
@@ -285,6 +286,7 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
                         <ProductRender
                           kind={item.render}
                           color={item.color}
+                          photography={item.photography}
                           productName={item.name}
                           className="h-[76%] w-auto"
                           specular

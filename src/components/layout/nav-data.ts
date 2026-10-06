@@ -1,6 +1,6 @@
 import { catalog, productInStock } from '@/server/catalog/repository';
 import { productPricing } from '@/server/pricing/pricing';
-import type { DeviceFamily, RenderKind } from '@/types/catalog';
+import type { DeviceFamily, Photo, RenderKind } from '@/types/catalog';
 
 /**
  * Navigation data, built on the server.
@@ -16,6 +16,7 @@ export interface NavProduct {
   name: string;
   tagline: string;
   render: RenderKind;
+  photography?: Photo;
   color: { hex: string; hexAccent: string; name: string; light: boolean };
   fromTransfer: number;
   inStock: boolean;
@@ -27,6 +28,7 @@ export interface NavCategory {
   display: string;
   blurb: string;
   render: RenderKind;
+  photography?: Photo;
   color: { hex: string; hexAccent: string; name: string; light: boolean };
   fromTransfer: number;
   count: number;
@@ -67,6 +69,7 @@ export function buildNavData(): NavData {
       display: category.display,
       blurb: category.blurb,
       render: hero?.render ?? category.render,
+      ...(hero?.photography ? { photography: hero.photography } : {}),
       color: hero ? colorOf(hero) : { hex: '#8a8a8a', hexAccent: '#9a9a9a', name: '', light: true },
       fromTransfer: cheapest ?? 0,
       count: members.length,
@@ -82,6 +85,7 @@ export function buildNavData(): NavData {
       name: product.name,
       tagline: product.tagline,
       render: product.render,
+      ...(product.photography ? { photography: product.photography } : {}),
       color: colorOf(product),
       fromTransfer: productPricing(product).fromTransfer,
       inStock: productInStock(product),

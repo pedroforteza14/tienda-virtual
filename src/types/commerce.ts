@@ -1,4 +1,5 @@
 import type { Centavos } from '@/lib/money';
+import type { Photo } from '@/types/catalog';
 
 /** What the client is allowed to express about a cart: a SKU and a count. */
 export interface CartLineInput {
@@ -16,6 +17,8 @@ export interface PricedCartLine {
   colorName: string;
   colorHex: string;
   render: string;
+  /** The variant's photograph, when the catalogue has one. */
+  photography?: Photo;
   unitPrice: Centavos;
   lineTotal: Centavos;
   /** Units actually available; the client shows this, it never asserts it. */

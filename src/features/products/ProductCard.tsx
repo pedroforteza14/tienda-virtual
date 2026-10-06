@@ -66,6 +66,9 @@ export function ProductCard({
             <ProductRender
               kind={product.render}
               color={color}
+              photography={product.photography}
+              // Grid is 1 / 2 / 3 / 4 columns as the viewport grows.
+              sizes="(max-width: 40rem) 90vw, (max-width: 64rem) 45vw, (max-width: 80rem) 30vw, 22rem"
               productName={product.name}
               className="h-full w-full"
               specular

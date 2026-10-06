@@ -16,12 +16,34 @@ export const RENDER_KINDS = [
   'case',
   'puck',
   'stylus',
+  'headphones',
+  'display',
+  'speaker',
+  'keyboard',
 ] as const;
 export type RenderKind = (typeof RENDER_KINDS)[number];
 
 /** What a buyer is actually trying to do. Drives /descubri. */
 export const USE_CASES = ['work', 'creative', 'everyday', 'travel', 'entertainment'] as const;
 export type UseCase = (typeof USE_CASES)[number];
+
+/**
+ * A product photograph.
+ *
+ * `width` and `height` are the file's intrinsic pixel size and are **required**:
+ * `next/image` reserves the box from that ratio before the bytes arrive, and
+ * without it the image pops in and pushes the page around. This storefront
+ * measures a cumulative layout shift of 0.0000 and the number was expensive to
+ * get; a photo without dimensions is how it would be lost.
+ */
+export interface Photo {
+  /** Path under `public/`, or an absolute URL on an allow-listed host. */
+  src: string;
+  /** Spanish, describing the object — never "foto de producto". */
+  alt: string;
+  width: number;
+  height: number;
+}
 
 export interface Colorway {
   id: string;
@@ -54,8 +76,14 @@ export interface Variant {
   priceList: Centavos;
   /** Units on hand. Display-only on the client; re-read server-side at checkout. */
   stock: number;
-  /** Real photography, when it exists. Falls back to the procedural render. */
-  photography?: { src: string; alt: string; width: number; height: number };
+  /**
+   * Photography for this exact variant — this colour, this capacity.
+   *
+   * Optional, and falls back to the product's shot, then to the procedural
+   * render. Colour is the one attribute a buyer checks against a picture, so a
+   * per-colour image is worth having; a per-capacity one almost never is.
+   */
+  photography?: Photo;
 }
 
 export interface Product {
@@ -67,6 +95,13 @@ export interface Product {
   /** Two sentences, Spanish, commercial. */
   summary: string;
   render: RenderKind;
+  /**
+   * The product's hero shot, used wherever no particular variant is on screen:
+   * listing cards, search results, the home rail. A variant's own photography
+   * overrides it. Absent on every product today — see `src/data/README.md` on
+   * where the files go — and the procedural render stands in until it is not.
+   */
+  photography?: Photo;
   colors: Colorway[];
   /** Ordered storage tiers; empty for products without them. */
   storages: string[];

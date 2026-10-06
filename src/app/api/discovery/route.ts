@@ -31,6 +31,7 @@ export const POST = guarded(
           summary: product.summary,
           highlights: product.highlights.slice(0, 2),
           render: product.render,
+          ...(product.photography ? { photography: product.photography } : {}),
           color: {
             hex: product.colors[0]?.hex ?? '#888',
             hexAccent: product.colors[0]?.hexAccent ?? '#999',

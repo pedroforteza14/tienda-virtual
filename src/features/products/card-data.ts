@@ -1,6 +1,7 @@
 import { productPricing } from '@/server/pricing/pricing';
 import { availableStockMany } from '@/server/orders/inventory';
-import type { Product, RenderKind } from '@/types/catalog';
+import { photoFor } from '@/lib/photos';
+import type { Photo, Product, RenderKind } from '@/types/catalog';
 
 /**
  * The projection a product card needs — and nothing more.
@@ -16,6 +17,8 @@ export interface ProductCardData {
   family: string;
   tagline: string;
   render: RenderKind;
+  /** Hero photograph, when the catalogue has one. Absent → procedural render. */
+  photography?: Photo;
   colors: { id: string; hex: string; hexAccent: string; name: string; light: boolean }[];
   from: number;
   fromTransfer: number;
@@ -78,6 +81,7 @@ function toCardDataWith(
     family: product.family,
     tagline: product.tagline,
     render: product.render,
+    ...(photoFor(product) ? { photography: photoFor(product) } : {}),
     colors: product.colors.map((color) => ({
       id: color.id,
       hex: color.hex,

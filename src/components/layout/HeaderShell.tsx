@@ -229,6 +229,8 @@ export function HeaderShell({ nav }: { nav: NavData }) {
                       <ProductRender
                         kind={category.render}
                         color={category.color}
+                        photography={category.photography}
+                        sizes="48px"
                         productName={category.name}
                         className="h-11 w-11"
                       />
@@ -268,6 +270,8 @@ export function HeaderShell({ nav }: { nav: NavData }) {
                       <ProductRender
                         kind={product.render}
                         color={product.color}
+                        photography={product.photography}
+                        sizes="56px"
                         productName={product.name}
                         className="h-13 w-13"
                         specular
