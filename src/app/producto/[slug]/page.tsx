@@ -135,13 +135,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       >
         <ol className="u-mono flex flex-wrap items-center gap-2 text-micro text-fg-faint">
           <li>
-            <Link href="/" className="inline-block py-1.5 transition-colors hover:text-fg-dim">
+            <Link href="/" className="inline-block py-1.5 underline decoration-line decoration-1 underline-offset-4 transition-colors hover:text-fg-dim hover:decoration-fg-dim">
               Inicio
             </Link>
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <Link href="/tienda" className="inline-block py-1.5 transition-colors hover:text-fg-dim">
+            <Link href="/tienda" className="inline-block py-1.5 underline decoration-line decoration-1 underline-offset-4 transition-colors hover:text-fg-dim hover:decoration-fg-dim">
               Catálogo
             </Link>
           </li>
@@ -151,7 +151,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <li>
                 <Link
                   href={`/tienda/${category.slug}`}
-                  className="inline-block py-1.5 transition-colors hover:text-fg-dim"
+                  className="inline-block py-1.5 underline decoration-line decoration-1 underline-offset-4 transition-colors hover:text-fg-dim hover:decoration-fg-dim"
                 >
                   {category.name}
                 </Link>

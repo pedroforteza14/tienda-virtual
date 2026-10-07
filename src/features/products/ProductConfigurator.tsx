@@ -404,7 +404,7 @@ export function ProductConfigurator({
               <p className="u-mono truncate text-tiny font-semibold">
                 {formatARS(variant.transfer)}
               </p>
-              <p className="u-mono truncate text-[0.5625rem] uppercase tracking-[0.12em] text-fg-faint">
+              <p className="u-mono truncate text-nano uppercase tracking-[0.12em] text-fg-faint">
                 {color.name}
                 {tier ? ` · ${tier}` : ''}
               </p>

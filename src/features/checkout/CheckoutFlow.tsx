@@ -207,7 +207,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
             <li key={label} className="u-mono flex items-center gap-2 text-micro">
               <span
                 className={cn(
-                  'grid size-5 place-items-center rounded-full border text-[0.5625rem]',
+                  'grid size-5 place-items-center rounded-full border text-nano',
                   index === step
                     ? 'border-accent bg-accent text-on-accent'
                     : index < step

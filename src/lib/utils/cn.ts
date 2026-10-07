@@ -14,6 +14,7 @@ import { extendTailwindMerge } from 'tailwind-merge';
  * `tests/unit/cn.test.ts` locks this down.
  */
 const FONT_SIZES = [
+  'nano',
   'micro',
   'tiny',
   'body',

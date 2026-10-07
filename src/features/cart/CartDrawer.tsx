@@ -210,7 +210,7 @@ export function CartDrawer() {
           </ButtonLink>
 
           {PRICES_ARE_MOCK ? (
-            <p className="u-mono mt-3 text-center text-[0.5625rem] uppercase tracking-[0.14em] text-fg-faint">
+            <p className="u-mono mt-3 text-center text-nano uppercase tracking-[0.14em] text-fg-faint">
               Precios de demostración
             </p>
           ) : null}

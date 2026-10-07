@@ -74,7 +74,7 @@ export function MobileNav() {
                 {loaded && itemCount > 0 ? (
                   <span
                     aria-hidden="true"
-                    className="u-mono absolute -right-2 -top-1 grid min-w-3.5 place-items-center rounded-full bg-accent px-1 text-[0.5rem] font-semibold text-on-accent"
+                    className="u-mono absolute -right-2 -top-1 grid min-w-3.5 place-items-center rounded-full bg-accent px-1 text-nano font-semibold text-on-accent"
                   >
                     {itemCount}
                   </span>
@@ -138,7 +138,7 @@ export function MobileNav() {
 function tabClass(active: boolean): string {
   return cn(
     // 56px tall: comfortably over the 44px minimum, with the label included.
-    'u-mono flex h-14 w-full flex-col items-center justify-center gap-1 text-[0.5625rem] uppercase tracking-[0.1em] transition-colors',
+    'u-mono flex h-14 w-full flex-col items-center justify-center gap-1 text-nano uppercase tracking-[0.1em] transition-colors',
     active ? 'text-accent' : 'text-fg-faint',
   );
 }

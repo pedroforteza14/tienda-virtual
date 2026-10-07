@@ -187,7 +187,7 @@ export function HeaderShell({ nav }: { nav: NavData }) {
             {loaded && itemCount > 0 ? (
               <span
                 aria-hidden="true"
-                className="u-mono absolute right-1.5 top-1.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[0.5625rem] font-semibold text-on-accent"
+                className="u-mono absolute right-1.5 top-1.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-nano font-semibold text-on-accent"
               >
                 {itemCount}
               </span>

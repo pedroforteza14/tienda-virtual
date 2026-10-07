@@ -24,7 +24,13 @@
 
   --color-bone: #f2ede4;
   --color-bone-dim: #a8a29a;
-  --color-bone-faint: #6b6760;
+  /* Lifted from #6b6760, which measured 3.50:1 on ink and 3.27:1 on the raised
+     surface — below the 4.5:1 that WCAG 1.4.3 requires of body text, and this
+     tier carries real text: form placeholders, field hints, breadcrumbs, the
+     SKU, "con tarjeta". #827e77 is the lowest value on the same hue that clears
+     4.5:1 against all three grounds (worst case 4.56:1), so the three-step
+     hierarchy — 16.87 / 7.78 / 4.56 — still reads as three steps. */
+  --color-bone-faint: #827e77;
 
   --color-brass: #b58a4a;
   --color-brass-bright: #d9ae6a;
@@ -75,6 +81,12 @@
   --font-mono: var(--font-jetbrains), ui-monospace, 'SF Mono', monospace;
 
   /* Fluid scale. One `clamp()` per step, so a heading never needs a breakpoint. */
+  /* Below micro, for numerals inside a pill and nothing else. It exists as a
+     token because it was previously three different arbitrary values —
+     text-[0.5rem], text-[0.5625rem], text-[0.625rem] — and the cart counter
+     rendered at 8px in the mobile nav and 9px in the header: the same number,
+     two sizes, because neither had a name. */
+  --text-nano: 0.5625rem;
   --text-micro: clamp(0.6875rem, 0.66rem + 0.14vw, 0.75rem);
   --text-tiny: clamp(0.8125rem, 0.78rem + 0.16vw, 0.875rem);
   --text-body: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);

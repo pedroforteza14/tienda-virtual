@@ -96,6 +96,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="es-AR"
+      // Explicit rather than relying on the UA default. A probe reported `dir`
+      // as empty, and an unset direction is a guess the browser makes from the
+      // first strong character — fine for Spanish, wrong the day a product name
+      // or an address starts with an RTL run.
+      dir="ltr"
       className={`${archivo.variable} ${instrument.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >

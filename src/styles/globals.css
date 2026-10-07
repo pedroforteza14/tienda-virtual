@@ -101,6 +101,32 @@
 
 @layer components {
   /* ========================================================================== */
+  /*  POINTER AFFORDANCE                                                        */
+  /* ========================================================================== */
+
+  /* A UX probe found the whole application shipping with no `cursor` rule at
+     all, so every `<button>` fell back to the UA default — an arrow. Search,
+     cart, the menu, quick-add, the configurator swatches and the quantity
+     stepper all failed to signal on hover that they could be clicked, on the
+     one input mode where hover is the signal. Anchors get it from the UA;
+     buttons and the summary element do not.
+
+     `:disabled` is excluded deliberately: a pointer on a control that will not
+     respond is a worse lie than no pointer at all. */
+  button:not(:disabled),
+  summary,
+  [role='button']:not([aria-disabled='true']),
+  label:has(> input[type='radio']),
+  label:has(> input[type='checkbox']) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  /* ========================================================================== */
   /*  FOCUS                                                                     */
   /* ========================================================================== */
 

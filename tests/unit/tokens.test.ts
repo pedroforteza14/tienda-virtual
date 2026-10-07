@@ -58,6 +58,30 @@ describe('palette contrast', () => {
     expect(ratio(token('color-bone-dim'), RAISED())).toBeGreaterThanOrEqual(4.5);
   });
 
+  /**
+   * The tier this test used to skip.
+   *
+   * `bone-faint` was asserted nowhere, so it shipped at 3.50:1 on ink and
+   * 3.27:1 on the raised surface while every check passed. It is not
+   * decoration — 59 usages, including form placeholders, field hints,
+   * breadcrumbs and "con tarjeta" next to the price — so 1.4.3 applies to it
+   * exactly as it does to the other two.
+   */
+  it('the faintest text tier still reaches AA on all three grounds', () => {
+    const faint = token('color-bone-faint');
+    expect(ratio(faint, INK())).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(faint, RAISED())).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(faint, token('color-ink-sunken'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('keeps the three text tiers visually distinct', () => {
+    // Raising `faint` for contrast must not collapse it into `dim`; a hierarchy
+    // of three steps that measures as two is a different defect.
+    const onInk = (name: string) => ratio(token(name), INK());
+    expect(onInk('color-bone')).toBeGreaterThan(onInk('color-bone-dim') + 2);
+    expect(onInk('color-bone-dim')).toBeGreaterThan(onInk('color-bone-faint') + 2);
+  });
+
   it('the brass accent reaches AA as text and as a button background', () => {
     expect(ratio(token('color-brass'), INK())).toBeGreaterThanOrEqual(4.5);
     // The primary CTA is ink on brass, so it has to work in both directions.
@@ -86,12 +110,59 @@ describe('palette contrast', () => {
     expect(ratio(token('color-signal-err-deep'), INK())).toBeLessThan(4.5);
   });
 
-  it('the faint token cannot carry text, which is why it is restricted to hairlines', () => {
-    expect(ratio(token('color-bone-faint'), INK())).toBeLessThan(4.5);
-  });
+  /**
+   * There used to be an assertion here that `bone-faint` must measure *below*
+   * 4.5:1, justified as "restricted to hairlines". The restriction was never
+   * real: the token had 59 text usages, among them `placeholder:text-fg-faint`
+   * on every form field. So the test did not merely miss the failure, it
+   * defended it — a reviewer who raised the value would have been told by a
+   * green suite that they had broken something.
+   *
+   * The lesson is narrow and worth keeping: a test may encode a policy, but
+   * only if something enforces the policy. Nothing stopped a component from
+   * writing `text-fg-faint`, so the policy was a comment with an assertion
+   * attached. The AA assertion above replaces it.
+   */
 });
 
 describe('token discipline', () => {
+  /**
+   * Arbitrary font sizes bypass the scale and, worse, bypass `cn()`.
+   *
+   * A UX probe counted eleven distinct computed sizes on the product page
+   * against an eight-step scale: the extras were `text-[0.5rem]`,
+   * `text-[0.5625rem]` and `text-[0.625rem]`, written inline. They rendered the
+   * cart counter at 8px in the mobile nav and 9px in the header — one number,
+   * two sizes, because neither had a name. They are now `text-nano`.
+   *
+   * The wordmark is the one exemption and is listed explicitly: a logo is set
+   * optically, not on the text scale.
+   */
+  it('sets every font size from the scale, with the wordmark the only exemption', async () => {
+    const { readdirSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!/\.tsx?$/.test(entry)) continue;
+        // A logo is set optically, not on the text scale.
+        if (entry === 'Wordmark.tsx') continue;
+        for (const match of readFileSync(full, 'utf8').matchAll(/text-\[[0-9][^\]]*\]/g)) {
+          offenders.push(`${full} → ${match[0]}`);
+        }
+      }
+    };
+    walk(new URL('../../src', import.meta.url).pathname);
+
+    expect(offenders, offenders.join('\n')).toHaveLength(0);
+  });
+
   it('defines every semantic alias a component is allowed to reference', () => {
     for (const alias of [
       '--surface',
