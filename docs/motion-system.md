@@ -37,9 +37,19 @@ Nothing travels more than ~120 px without also scaling.
    stagger per row, mono label fading in behind it. This is the site's rhythm signature.
 4. **Specular sweep** — a soft linear gradient crosses a device render on hover and while it is
    scroll-pinned, so the object reads as a lit physical thing. 2 % opacity on ink.
-5. **Assembly** (`/` hero and the product page) — the object builds itself from its parts: contact
-   shadow, chassis, glass, then the details, each rising 8 units and fading in over `--dur-base`
-   with a 45 ms stagger. 725 ms in total, inside the 900 ms this system reserves for a hero resolve.
+5. **Assembly** (`/` hero, the product page and every listing card) — the object builds itself from
+   its parts: contact shadow, chassis, glass, then the details, each rising 18 units and fading in
+   over 300 ms with a 65 ms stagger. 885 ms in total, inside the 900 ms this system reserves for a
+   hero resolve.
+
+   The first version used 8 units and 45 ms and **was not legible**: it needed a 6× slowdown to read
+   as a sequence in a capture, which is the tell that at speed it reads as a fade, not an assembly.
+   1.3 % of a 620-unit drawing is below the threshold where travel is perceived at all. Numbers that
+   are correct in principle and invisible in practice are worth the same as no animation.
+
+   Cards run a tighter variant — 32 ms step, 260 ms duration, 10 units — because a small drawing seen
+   twelve times at once needs less of everything, and each card carries an offset of `55 ms ×` its
+   grid position (capped at six) so a row resolves left to right instead of flashing as a block.
 
    It costs nothing to author. Every device is already drawn as an ordered list of SVG shapes, and
    the order they are written in is the order a technician would assemble them in — the animation is
@@ -47,10 +57,10 @@ Nothing travels more than ~120 px without also scaling.
    interruption, and it still runs when JavaScript never arrives, which is exactly the connection
    where a product appearing out of nothing is worth most.
 
-   Deliberately **not** on listing cards, the cart or search. Staging says animate one thing at a
-   time; twelve cards assembling at once is not staging, it is weather. On the product page it runs
-   on first mount only, because the stage is keyed on the variant and replaying the build on every
-   colour change would tax the interaction the configurator exists for.
+   Not on the cart drawer or search results, where a thumbnail is a label for something you already
+   chose. On the product page it runs on first mount only, because the stage is keyed on the variant
+   and replaying the build on every colour change would tax the interaction the configurator exists
+   for.
 
 ---
 

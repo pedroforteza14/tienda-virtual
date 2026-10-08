@@ -228,9 +228,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </h2>
           </Reveal>
           <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {pairCards.map((card) => (
+            {pairCards.map((card, index) => (
               <li key={card.slug}>
-                <ProductCard product={card} />
+                <ProductCard product={card} index={index} />
               </li>
             ))}
           </ul>
@@ -246,9 +246,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </h2>
           </Reveal>
           <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {relatedCards.map((card) => (
+            {relatedCards.map((card, index) => (
               <li key={card.slug}>
-                <ProductCard product={card} />
+                <ProductCard product={card} index={index} />
               </li>
             ))}
           </ul>

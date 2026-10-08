@@ -116,6 +116,7 @@ export async function CatalogView({
                   product={card}
                   // The first row is above the fold; the rest lazy-load.
                   priority={index < 4}
+                  index={index}
                 />
               </li>
             ))}

@@ -23,10 +23,13 @@ import type { ProductCardData } from '@/features/products/card-data';
 export function ProductCard({
   product,
   priority = false,
+  index = 0,
   className,
 }: {
   product: ProductCardData;
   priority?: boolean;
+  /** Position in the grid. Staggers this card's assembly against its neighbours. */
+  index?: number;
   className?: string;
 }) {
   const color = product.colors[0] ?? {
@@ -73,6 +76,9 @@ export function ProductCard({
               className="h-full w-full"
               specular
               priority={priority}
+              assemble
+              assembleVariant="card"
+              assembleIndex={index}
             />
           </div>
         </div>

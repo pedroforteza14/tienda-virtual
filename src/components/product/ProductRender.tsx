@@ -84,6 +84,13 @@ export interface ProductRenderProps {
    * weather. It applies to the drawing only; a photograph has no parts.
    */
   assemble?: boolean;
+  /**
+   * `'hero'` is the full sequence; `'card'` is the tighter one a listing needs.
+   * `index` staggers one card against the next, so a row resolves across rather
+   * than flashing as a block.
+   */
+  assembleVariant?: 'hero' | 'card';
+  assembleIndex?: number;
   /** Adds the scroll/hover specular sweep layer. Off for small thumbnails. */
   specular?: boolean;
   priority?: boolean;
@@ -99,6 +106,8 @@ export function ProductRender({
   specular = false,
   priority = false,
   assemble = false,
+  assembleVariant = 'hero',
+  assembleIndex = 0,
 }: ProductRenderProps) {
   // Called unconditionally and before any early return: hooks are not optional.
   const id = defsId(useId());
@@ -148,7 +157,22 @@ export function ProductRender({
         {/* The parts are wrapped so the stagger applies to the shapes and not to
             `<defs>`, which has no geometry and would spend a step of the
             sequence rendering nothing. */}
-        <g className={assemble ? 'assemble' : undefined}>{DRAWINGS[kind]({ id })}</g>
+        <g
+          className={
+            assemble
+              ? cn('assemble', assembleVariant === 'card' && 'assemble-card')
+              : undefined
+          }
+          style={
+            assemble && assembleVariant === 'card'
+              ? // Capped at six: past that the stagger adds nothing and only
+                // delays a product nobody is waiting on.
+                ({ ['--card-index' as string]: String(Math.min(assembleIndex, 6)) } as React.CSSProperties)
+              : undefined
+          }
+        >
+          {DRAWINGS[kind]({ id })}
+        </g>
       </svg>
       {specular ? <span className="specular" aria-hidden="true" /> : null}
     </div>

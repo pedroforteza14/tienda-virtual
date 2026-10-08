@@ -119,9 +119,10 @@
     would leave the product invisible on exactly the slow connection where the
     reassurance is worth most.
 
-    Budget: 45ms stagger × 9 steps + 320ms = 725ms, inside the 900ms this system
-    reserves for a hero resolve. The delay is capped from the tenth shape so a
-    drawing with twenty parts does not take twice as long as one with ten.
+    Budget: 65ms stagger × 9 steps + 300ms = 885ms, inside the 900ms this system
+    reserves for a hero resolve. Listing cards run a tighter version — see
+    `.assemble-card` below — because a small drawing seen twelve times at once
+    needs less of everything.
 
     It does not touch LCP: an inline SVG shape is not an LCP candidate, and
     measurement confirms the element is the headline (428ms on the home, 364ms
@@ -131,7 +132,12 @@
   @keyframes assemble-part {
     from {
       opacity: 0;
-      transform: translateY(8px) scale(0.985);
+      /* 18 user units, not 8. The first version moved each part 1.3% of a
+         620-unit drawing with a 45ms gap between them, which is below the
+         threshold where a sequence reads AS a sequence: you saw the object fade
+         in, not assemble. It needed a 6x slowdown to be legible in a capture,
+         which was the tell. */
+      transform: translateY(18px) scale(0.96);
     }
     to {
       opacity: 1;
@@ -144,19 +150,65 @@
        part across the drawing instead of settling it in place. */
     transform-box: fill-box;
     transform-origin: 50% 60%;
-    animation: assemble-part var(--dur-base) var(--ease-out-owner) backwards;
+    animation: assemble-part var(--assemble-dur, 300ms) var(--ease-out-owner) backwards;
+    /*
+      Three knobs instead of ten hard-coded delays, so a surface can tune the
+      sequence without restating it: `--assemble-step` is the gap between parts,
+      `--assemble-i` their index, and `--assemble-offset` shifts a whole object
+      — which is how a grid of cards staggers card by card rather than popping
+      as one.
+    */
+    animation-delay: calc(
+      var(--assemble-offset, 0ms) + var(--assemble-step, 65ms) * var(--assemble-i, 0)
+    );
   }
 
-  .assemble > *:nth-child(1) { animation-delay: 0ms; }
-  .assemble > *:nth-child(2) { animation-delay: 45ms; }
-  .assemble > *:nth-child(3) { animation-delay: 90ms; }
-  .assemble > *:nth-child(4) { animation-delay: 135ms; }
-  .assemble > *:nth-child(5) { animation-delay: 180ms; }
-  .assemble > *:nth-child(6) { animation-delay: 225ms; }
-  .assemble > *:nth-child(7) { animation-delay: 270ms; }
-  .assemble > *:nth-child(8) { animation-delay: 315ms; }
-  .assemble > *:nth-child(9) { animation-delay: 360ms; }
-  .assemble > *:nth-child(n + 10) { animation-delay: 405ms; }
+  .assemble > *:nth-child(1) { --assemble-i: 0; }
+  .assemble > *:nth-child(2) { --assemble-i: 1; }
+  .assemble > *:nth-child(3) { --assemble-i: 2; }
+  .assemble > *:nth-child(4) { --assemble-i: 3; }
+  .assemble > *:nth-child(5) { --assemble-i: 4; }
+  .assemble > *:nth-child(6) { --assemble-i: 5; }
+  .assemble > *:nth-child(7) { --assemble-i: 6; }
+  .assemble > *:nth-child(8) { --assemble-i: 7; }
+  .assemble > *:nth-child(9) { --assemble-i: 8; }
+  /* Capped, so a drawing with twenty parts does not run twice as long as one
+     with ten. */
+  .assemble > *:nth-child(n + 10) { --assemble-i: 9; }
+
+  /*
+    The listing variant.
+
+    A card's drawing is a fraction of the hero's size, and twelve of them are on
+    screen at once, so the same numbers would be both illegible (too small to
+    read the travel) and overwhelming (twelve objects moving together). This
+    halves the step and the travel, and each card carries its own
+    `--assemble-offset` from its position in the grid, so a row resolves left to
+    right instead of flashing as a block.
+
+    The offset is capped at six cards' worth: past that the stagger stops adding
+    anything and only delays the product nobody is waiting on.
+  */
+  .assemble-card {
+    --assemble-step: 32ms;
+    --assemble-dur: 260ms;
+    --assemble-offset: calc(55ms * var(--card-index, 0));
+  }
+
+  .assemble-card > * {
+    animation-name: assemble-card-part;
+  }
+
+  @keyframes assemble-card-part {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.975);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 
   /* ========================================================================== */
   /*  POINTER AFFORDANCE                                                        */
