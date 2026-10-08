@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'motion/react';
+import { EASE_OUT } from '@/lib/motion/easing';
 
 /**
  * A 6 px brass dot that lags the pointer and dilates over interactive elements.
@@ -68,7 +69,7 @@ export function Cursor() {
         opacity: hot ? 0.9 : 0.6,
         backgroundColor: hot ? 'transparent' : 'var(--accent)',
       }}
-      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.22, ease: EASE_OUT }}
     />
   );
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils/cn';
+import { DUR, EASE_IN, EASE_OUT } from '@/lib/motion/easing';
 
 /**
  * ============================================================================
@@ -169,7 +170,7 @@ export function Overlay({
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: reduced ? 0 : DUR.fast, ease: EASE_IN } }}
             transition={{ duration: reduced ? 0 : 0.24 }}
             className="absolute inset-0 bg-[color-mix(in_oklab,var(--color-ink-sunken)_82%,transparent)] backdrop-blur-[2px]"
           />
@@ -182,10 +183,14 @@ export function Overlay({
             tabIndex={-1}
             initial={reduced ? MOTION[side].to : MOTION[side].from}
             animate={MOTION[side].to}
-            exit={reduced ? MOTION[side].to : MOTION[side].from}
+            exit={
+              reduced
+                ? MOTION[side].to
+                : { ...MOTION[side].from, transition: { duration: DUR.base, ease: EASE_IN } }
+            }
             transition={{
               duration: reduced ? 0 : 0.42,
-              ease: [0.16, 1, 0.3, 1],
+              ease: EASE_OUT,
             }}
             className={cn(
               'absolute flex flex-col bg-surface-raised outline-none',

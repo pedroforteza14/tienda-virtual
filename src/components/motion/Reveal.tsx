@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils/cn';
+import { DUR, EASE_OUT } from '@/lib/motion/easing';
 
 /**
  * Section ingress: opacity plus a short rise.
@@ -43,7 +44,7 @@ export function Reveal({
       initial={{ opacity: 0, y: distance }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.56, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: DUR.slow, delay, ease: EASE_OUT }}
     >
       {children}
     </Component>
@@ -102,7 +103,7 @@ export function RevealItem({
       className={className}
       variants={{
         hidden: { opacity: 0, y: 14 },
-        shown: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+        shown: { opacity: 1, y: 0, transition: { duration: DUR.slow, ease: EASE_OUT } },
       }}
     >
       {children}

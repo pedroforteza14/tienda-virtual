@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useCommerce } from '@/features/cart/CommerceProvider';
 import { cn } from '@/lib/utils/cn';
+import { DUR, EASE_IN, EASE_OUT } from '@/lib/motion/easing';
 
 const TONES = {
   info: 'border-line-strong text-fg',
@@ -36,8 +37,16 @@ export function ToastRegion() {
             key={item.id}
             initial={reduced ? { opacity: 1 } : { opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduced ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: reduced ? 0 : 0.3, ease: [0.16, 1, 0.3, 1] }}
+            // The exit carries its own curve: a single `transition` governs
+            // entrance and exit alike, which is why every dismissal in this app
+            // was leaving on the entrance curve — lingering when it should get
+            // out of the way.
+            exit={
+              reduced
+                ? { opacity: 0 }
+                : { opacity: 0, y: 8, scale: 0.98, transition: { duration: DUR.fast, ease: EASE_IN } }
+            }
+            transition={{ duration: reduced ? 0 : DUR.base, ease: EASE_OUT }}
             className={cn(
               'pointer-events-auto flex max-w-[min(32rem,100%)] items-start gap-3 rounded-[var(--radius-sm)]',
               'border bg-surface-raised px-4 py-3 text-tiny',

@@ -127,6 +127,73 @@ describe('palette contrast', () => {
 
 describe('token discipline', () => {
   /**
+   * A token nothing uses is dead weight the tests were protecting.
+   *
+   * A design-system audit found 11 of 84 tokens declared, documented and
+   * asserted-to-exist by this very file, yet referenced by no component. The
+   * suite was checking the CATALOGUE rather than the USAGE, so the dead ones
+   * were defended instead of detected — the same shape as the contrast bug,
+   * where an assertion guarded the defect.
+   *
+   * Four with no defence (`--color-graphite`, `--color-focus`, `--radius-md`,
+   * `--shadow-sheet`) were deleted. The rest are deliberate reserves and are
+   * listed here with the reason, so the list is a decision someone made rather
+   * than residue nobody noticed. Adding to it should feel like a small cost.
+   */
+  const RESERVED_UNUSED: Record<string, string> = {
+    '--text-display': 'the step above --text-hero, held for a campaign page',
+    '--dur-instant': 'press and toggle feedback; consumed from JS via lib/motion/easing',
+    '--dur-cinema': 'the hero-resolve budget the assembly is measured against',
+    '--ease-in-owner': 'consumed from JS via lib/motion/easing for every exit',
+    '--ease-inout-owner': 'consumed from JS via lib/motion/easing',
+    '--color-signal-err-deep': 'error borders on light surfaces; documented non-text',
+  };
+
+  it('has no token that is neither used nor a declared reserve', async () => {
+    const { readdirSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+
+    const sources: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (/\.(tsx?|css)$/.test(entry) && !full.includes('/styles/')) {
+          sources.push(readFileSync(full, 'utf8'));
+        }
+      }
+    };
+    walk(new URL('../../src', import.meta.url).pathname);
+    const code = sources.join('\n');
+    const styles = css + readFileSync(new URL('../../src/styles/globals.css', import.meta.url), 'utf8');
+
+    const declared = [...new Set([...styles.matchAll(/^\s*(--[a-z0-9-]+):/gm)].map((m) => m[1]!))];
+
+    const dead = declared.filter((name) => {
+      if (name in RESERVED_UNUSED) return false;
+      // Breakpoints are consumed by Tailwind's own `sm:`/`md:` prefixes, and
+      // `--spacing` is the base its spacing scale is generated from.
+      if (name.startsWith('--breakpoint-') || name === '--spacing') return false;
+      // `var(--x)` and `var(--x, fallback)` both count as a use. Matching only
+      // the first form reported three live tokens as dead, which is how a
+      // governance check loses the room.
+      if (new RegExp(`var\\(\\s*${name}\\s*[,)]`).test(styles)) return false;
+      if (code.includes(name)) return false;
+      // `@theme` turns a token into a utility: --color-fg → text-fg, bg-fg, …
+      const root = name.replace(/^--(color|text|font|radius|shadow|ease|dur)-/, '');
+      const utility = new RegExp(
+        `(bg|text|border|fill|stroke|ring|rounded|shadow|duration|ease|from|to|via)-${root}\\b`,
+      );
+      return !utility.test(code);
+    });
+
+    expect(dead, `Unused and undeclared:\n${dead.join('\n')}`).toHaveLength(0);
+  });
+
+  /**
    * Arbitrary font sizes bypass the scale and, worse, bypass `cn()`.
    *
    * A UX probe counted eleven distinct computed sizes on the product page

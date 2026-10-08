@@ -13,6 +13,7 @@ import { Magnetic } from '@/components/motion/Magnetic';
 import { ProductRender } from '@/components/product/ProductRender';
 import { useCommerce } from '@/features/cart/CommerceProvider';
 import type { Photo, RenderKind } from '@/types/catalog';
+import { DUR, EASE_IN, EASE_OUT } from '@/lib/motion/easing';
 
 /**
  * ============================================================================
@@ -149,8 +150,12 @@ export function ProductConfigurator({
               key={color.id}
               initial={reduced ? { opacity: 1 } : { opacity: 0, scale: 0.99 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={reduced ? { opacity: 1 } : { opacity: 0, scale: 0.99 }}
-              transition={{ duration: reduced ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+              exit={
+                reduced
+                  ? { opacity: 1 }
+                  : { opacity: 0, scale: 0.99, transition: { duration: DUR.fast, ease: EASE_IN } }
+              }
+              transition={{ duration: reduced ? 0 : 0.2, ease: EASE_OUT }}
               className="relative grid h-full w-full place-items-center p-8"
             >
               <ProductRender

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils/cn';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { ProductRender } from '@/components/product/ProductRender';
 import { USE_CASES, type Photo, type RenderKind, type UseCase } from '@/types/catalog';
+import { DUR, EASE_IN, EASE_OUT } from '@/lib/motion/easing';
 
 /**
  * ============================================================================
@@ -116,7 +117,7 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
     [],
   );
 
-  const transition = { duration: reduced ? 0 : 0.42, ease: [0.16, 1, 0.3, 1] as const };
+  const transition = { duration: reduced ? 0 : 0.42, ease: EASE_OUT };
 
   return (
     <div className="u-container u-section">
@@ -140,7 +141,11 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
             key="step-use"
             initial={reduced ? { opacity: 1 } : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduced ? { opacity: 1 } : { opacity: 0, y: -18 }}
+            exit={
+              reduced
+                ? { opacity: 1 }
+                : { opacity: 0, y: -18, transition: { duration: DUR.fast, ease: EASE_IN } }
+            }
             transition={transition}
             className="mt-10"
           >
@@ -186,7 +191,11 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
             key="step-budget"
             initial={reduced ? { opacity: 1 } : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduced ? { opacity: 1 } : { opacity: 0, y: -18 }}
+            exit={
+              reduced
+                ? { opacity: 1 }
+                : { opacity: 0, y: -18, transition: { duration: DUR.fast, ease: EASE_IN } }
+            }
             transition={transition}
             className="mt-10"
           >
@@ -249,7 +258,11 @@ export function DiscoveryExperience({ initialUseCase }: { initialUseCase: UseCas
             key="step-results"
             initial={reduced ? { opacity: 1 } : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduced ? { opacity: 1 } : { opacity: 0, y: -18 }}
+            exit={
+              reduced
+                ? { opacity: 1 }
+                : { opacity: 0, y: -18, transition: { duration: DUR.fast, ease: EASE_IN } }
+            }
             transition={transition}
             className="mt-10"
           >
