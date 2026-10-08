@@ -17,6 +17,10 @@ const VIEWPORTS = [
   { name: '1024', width: 1024, height: 768 },
   { name: '390', width: 390, height: 844 },
   { name: '375', width: 375, height: 812 },
+  /* A short phone. Every mobile size here was a tall one, which is why a hero
+     that did not fit on a 667px-high screen went unnoticed: the defect is in
+     the viewport's HEIGHT, and nothing in this list varied it. */
+  { name: '375x667', width: 375, height: 667 },
 ] as const;
 
 const ROUTES = [
@@ -293,6 +297,74 @@ test.describe('screenshots for the human pass', () => {
           path: `tests/e2e/__screenshots__/${route.name}-${viewport.name}.png`,
           fullPage: false,
         });
+      });
+    }
+  }
+});
+
+/**
+ * Nothing interactive may sit under a fixed overlay.
+ *
+ * The defect class this exists for: the home hero was sized to the full
+ * viewport while the mobile tab bar — `position: fixed`, `md:hidden` — was laid
+ * over its bottom 57px. The secondary call to action was 86% covered, and a tap
+ * on the sliver that remained hit a tab link instead, so the control was not
+ * merely hard to see, it did the wrong thing. On a 375x667 screen the PRIMARY
+ * call to action fell off the bottom entirely.
+ *
+ * No existing check could have caught it. Overflow tests look horizontally,
+ * tap-target tests measure a box without asking what is painted over it, and
+ * every mobile viewport in the list above was a tall one. This asks the only
+ * question that matters for a control: if a user taps where it is drawn, does
+ * the tap reach it?
+ */
+test.describe('no control is covered by a fixed overlay', () => {
+  for (const viewport of VIEWPORTS) {
+    for (const route of ROUTES) {
+      test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.goto(route.path);
+        await page.waitForLoadState('networkidle');
+
+        const blocked = await page.evaluate(() => {
+          const out: string[] = [];
+          const controls = document.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), [role="button"]',
+          );
+
+          for (const control of controls) {
+            const rect = control.getBoundingClientRect();
+            if (rect.width < 8 || rect.height < 8) continue;
+            // Off-screen entirely is a different question (scrolling reaches it).
+            if (rect.bottom <= 0 || rect.top >= innerHeight) continue;
+            if (rect.right <= 0 || rect.left >= innerWidth) continue;
+            // `sr-only` inputs and anything visually hidden are not drawn.
+            const style = getComputedStyle(control);
+            if (style.visibility === 'hidden' || style.opacity === '0') continue;
+            if (rect.width <= 1 || rect.height <= 1) continue;
+
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            // Only probe a centre that is actually inside the viewport. Clamping
+            // it to the edge instead reports every control sitting below the
+            // fold as "covered by the tab bar", which is false: scrolling
+            // reaches it. The question is whether a control DRAWN here can be
+            // tapped here.
+            if (x < 0 || x >= innerWidth || y < 0 || y >= innerHeight) continue;
+            const hit = document.elementFromPoint(x, y);
+            if (!hit) continue;
+            if (control.contains(hit) || hit.contains(control)) continue;
+
+            const label = (control.textContent || control.getAttribute('aria-label') || '')
+              .trim()
+              .slice(0, 40);
+            const over = (hit.textContent || '').trim().slice(0, 30);
+            out.push(`"${label}" is covered at its centre by "${over}"`);
+          }
+          return out;
+        });
+
+        expect(blocked, blocked.join('\n')).toEqual([]);
       });
     }
   }

@@ -160,6 +160,12 @@
   --section-y-tight: clamp(3rem, 7vh, 5rem);
   /* Height of the fixed header; used by scroll-margin and sticky offsets. */
   --header-h: 3.75rem;
+  /* Height of the fixed bottom tab bar, which exists below `md` only.
+     Anything that fills the viewport must subtract it: a design review found the
+     home hero sized to 100svh with the bar laid over its last 57px, which hid
+     86% of the secondary CTA and sent taps on the visible sliver to a tab link
+     instead. Zeroed at `md`, where the bar is not rendered. */
+  --nav-bottom-h: 3.5625rem;
 
   /* -------------------------------------------------------------- motion */
   --dur-instant: 90ms;
@@ -210,5 +216,14 @@
     --line: color-mix(in oklab, var(--color-bone) 34%, transparent);
     --line-strong: var(--color-bone);
     --text-dim: var(--color-bone);
+  }
+}
+
+/* The bottom tab bar is `md:hidden`, so the space it reserves must disappear at
+   the same breakpoint — otherwise every full-height section carries 57px of dead
+   padding on desktop. */
+@media (min-width: 48rem) {
+  :root {
+    --nav-bottom-h: 0rem;
   }
 }

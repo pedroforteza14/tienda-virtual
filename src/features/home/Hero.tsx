@@ -88,7 +88,7 @@ export function Hero({ product }: { product: HeroProduct }) {
     <div ref={ref} className="relative h-[175vh]">
       <section
         aria-labelledby="hero-heading"
-        className="sticky top-0 flex h-[100svh] flex-col overflow-hidden"
+        className="sticky top-0 flex min-h-[calc(100svh-var(--nav-bottom-h))] flex-col overflow-hidden"
       >
         <Ledger />
 
@@ -111,6 +111,22 @@ export function Hero({ product }: { product: HeroProduct }) {
           an earlier version centred it under the headline, where it was simply
           invisible. "Product as hero" has to mean the product is actually
           visible.
+
+          The height is a FLOOR, not a fixed value, and it subtracts the fixed
+          mobile tab bar.
+
+          It was `h-[100svh]`. The bar — `position: fixed`, `md:hidden` — was
+          laid over the bottom 57px, which covered 86% of the secondary call to
+          action; a tap on the sliver that remained landed on a tab link. On a
+          375x667 screen the PRIMARY call to action fell off the bottom.
+
+          Compressing the column instead was tried and is worse: the row's
+          content is 859px against 787px of space, so `min-h-0` makes the device
+          render overflow its cell and `place-items-center` then centres that
+          overflow across the headline. A short screen genuinely cannot hold
+          this composition in one view, and the honest answer is to let it grow
+          and be scrolled rather than to stack two focal points on top of each
+          other. On a tall screen nothing changes: the floor is the viewport.
         */}
         <div className="u-container relative z-10 grid flex-1 items-center gap-8 pt-[calc(var(--header-h)+1rem)] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-10">
           {/* ----------------------------- EDITORIAL -------------------------- */}
@@ -165,9 +181,13 @@ export function Hero({ product }: { product: HeroProduct }) {
           </div>
         </div>
 
-        {/* ----------------------------- COMMERCIAL --------------------------- */}
+        {/* ----------------------------- COMMERCIAL ---------------------------
+            The bottom padding carries the tab bar's height so the last control
+            never rests in the band the bar occupies. This works only because
+            the section's height is a floor: against the old fixed height the
+            same padding pushed the strip past the clip instead of lifting it. */}
         <motion.div
-          className="u-container relative z-10 shrink-0 pb-[clamp(1rem,4vh,2.5rem)]"
+          className="u-container relative z-10 shrink-0 pb-[calc(clamp(1rem,4vh,2.5rem)+var(--nav-bottom-h))]"
           style={motionProps ? motionProps.detail : { opacity: detailOpacity, y: detailY }}
         >
           <div className="flex flex-col gap-5 border-t border-line pt-5 md:flex-row md:items-end md:justify-between">
@@ -182,11 +202,28 @@ export function Hero({ product }: { product: HeroProduct }) {
               </p>
             </div>
 
+            {/*
+              One action on a phone, two from `sm` up.
+
+              Stacked, the pair made this strip 349px — 41% of a 390x844 screen —
+              which pushed the secondary button into the band the fixed tab bar
+              occupies, where a tap on it opened the catalogue tab instead. The
+              honest fix is not to squeeze it back in: two full-width calls to
+              action on a phone split the attention the primary one needs, and
+              the catalogue is already one tap away in both the tab bar and the
+              header. So below `sm` the hero carries price and a single action,
+              which is also what the brief asks of the first screen.
+            */}
             <div className="flex flex-wrap gap-3">
               <ButtonLink href={`/producto/${product.slug}`} size="lg">
                 Ver el {product.name}
               </ButtonLink>
-              <ButtonLink href="/tienda" variant="secondary" size="lg">
+              <ButtonLink
+                href="/tienda"
+                variant="secondary"
+                size="lg"
+                className="hidden sm:inline-flex"
+              >
                 Todo el catálogo
               </ButtonLink>
             </div>
