@@ -47,6 +47,13 @@ Nothing travels more than ~120 px without also scaling.
    1.3 % of a 620-unit drawing is below the threshold where travel is perceived at all. Numbers that
    are correct in principle and invisible in practice are worth the same as no animation.
 
+   It fires when the drawing **enters the viewport**, once per element, not on mount. On mount the
+   eight catalogue cards below the fold assembled themselves off-screen and were finished long
+   before anyone scrolled down — the animation was not missed, it was spent. The class ships in the
+   server-rendered markup so a page without JavaScript still assembles at load, and is taken away
+   on mount only for elements that are not yet visible: a swap nobody can see, because by definition
+   it happens off-screen.
+
    Cards run a tighter variant — 32 ms step, 260 ms duration, 10 units — because a small drawing seen
    twelve times at once needs less of everything, and each card carries an offset of `55 ms ×` its
    grid position (capped at six) so a row resolves left to right instead of flashing as a block.

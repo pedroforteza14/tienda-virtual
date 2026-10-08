@@ -369,3 +369,69 @@ test.describe('no control is covered by a fixed overlay', () => {
     }
   }
 });
+
+/**
+ * The assembly always finishes, and always on the object.
+ *
+ * The entrance starts every part at `opacity: 0`, which makes one failure mode
+ * far worse than a missing flourish: a part whose animation never runs, or is
+ * cut off, stays invisible, and the shopper is looking at a product with a hole
+ * in it. The risk became real when the sequence started waiting for the element
+ * to be scrolled into view — anything that breaks the observer breaks the
+ * drawing rather than just the motion.
+ *
+ * Scroll the whole page so every object gets its moment, then assert that no
+ * part is left transparent and no animation is still pending. A shape whose own
+ * `opacity` attribute is translucent is drawn that way on purpose, so the check
+ * compares against the attribute rather than against 1.
+ */
+test.describe('every product drawing settles fully assembled', () => {
+  // Only the routes that actually draw a product at rest. The discovery quiz
+  // renders one after an answer and the legal pages render none, so asserting
+  // that drawings exist there would fail for the wrong reason.
+  const WITH_PRODUCTS = ROUTES.filter((route) =>
+    ['home', 'catalogue', 'product'].includes(route.name),
+  );
+
+  for (const viewport of [VIEWPORTS[0]!, VIEWPORTS[3]!]) {
+    for (const route of WITH_PRODUCTS) {
+      test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.goto(route.path);
+        await page.waitForLoadState('networkidle');
+
+        await page.evaluate(async () => {
+          const step = window.innerHeight * 0.8;
+          for (let y = 0; y < document.body.scrollHeight; y += step) {
+            window.scrollTo(0, y);
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          window.scrollTo(0, 0);
+        });
+        await page.waitForTimeout(1600);
+
+        const broken = await page.evaluate(() => {
+          const parts = [...document.querySelectorAll('svg[role="img"] g > *')].filter(
+            (part) => part.getClientRects().length > 0,
+          );
+          const out: string[] = [];
+          for (const part of parts) {
+            const computed = Number(getComputedStyle(part).opacity);
+            const declared = part.getAttribute('opacity');
+            const expected = declared === null ? 1 : Number(declared);
+            if (Math.abs(computed - expected) > 0.02) {
+              out.push(`${part.tagName} rests at ${computed}, drawn as ${expected}`);
+            }
+            if (part.getAnimations().some((a) => a.playState === 'running' || a.playState === 'paused')) {
+              out.push(`${part.tagName} still has a pending animation`);
+            }
+          }
+          return { examined: parts.length, out };
+        });
+
+        expect(broken.examined).toBeGreaterThan(0);
+        expect(broken.out, broken.out.join('\n')).toEqual([]);
+      });
+    }
+  }
+});

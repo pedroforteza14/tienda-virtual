@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import { defsId, shade } from '@/components/product/shade';
@@ -76,12 +76,16 @@ export interface ProductRenderProps {
    */
   sizes?: string;
   /**
-   * Build the object in from its parts on mount.
+   * Build the object in from its parts, when it is first looked at.
    *
-   * Reserved for the two surfaces where the product is the protagonist — the
-   * home hero and the product page. Staging says animate one thing at a time,
-   * and twelve cards assembling at once on a listing is not staging, it is
-   * weather. It applies to the drawing only; a photograph has no parts.
+   * Not on mount: a catalogue shows four cards above the fold and eight below
+   * it, and on mount the eight assembled themselves off-screen and were
+   * finished long before anyone scrolled down. The animation was not merely
+   * missed, it was spent. It now waits for the drawing to enter the viewport,
+   * once per element — `once`, because re-running on every scroll pass is
+   * noise rather than polish.
+   *
+   * It applies to the drawing only; a photograph has no parts.
    */
   assemble?: boolean;
   /**
@@ -94,6 +98,50 @@ export interface ProductRenderProps {
   /** Adds the scroll/hover specular sweep layer. Off for small thumbnails. */
   specular?: boolean;
   priority?: boolean;
+}
+
+/**
+ * True once the element has been looked at.
+ *
+ * Starts true so the server-rendered markup carries the class: if JavaScript
+ * never arrives, the object still assembles at load, which is the behaviour
+ * worth keeping on a slow connection. On mount, an element that is NOT yet in
+ * the viewport has the class taken away and given back when it scrolls into
+ * view — a swap nobody can see, because by definition it happens off-screen.
+ *
+ * `rootMargin` fires it slightly before the edge so the sequence has started by
+ * the time the object is properly in frame, rather than beginning under the
+ * reader's chin.
+ */
+function useSeen(enabled: boolean): [boolean, React.RefObject<SVGSVGElement | null>] {
+  const ref = useRef<SVGSVGElement | null>(null);
+  const [seen, setSeen] = useState(true);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+
+    const rect = node.getBoundingClientRect();
+    const alreadyVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (alreadyVisible) return; // Above the fold: it is already playing. Leave it.
+
+    setSeen(false);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          setSeen(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.01 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [enabled]);
+
+  return [seen, ref];
 }
 
 export function ProductRender({
@@ -111,6 +159,7 @@ export function ProductRender({
 }: ProductRenderProps) {
   // Called unconditionally and before any early return: hooks are not optional.
   const id = defsId(useId());
+  const [seen, svgRef] = useSeen(assemble);
 
   if (photography) {
     return (
@@ -146,6 +195,7 @@ export function ProductRender({
      */
     <div className={cn('relative grid place-items-center', className)}>
       <svg
+        ref={svgRef}
         viewBox={VIEWBOX[kind]}
         role="img"
         aria-label={`${productName} en ${color.name}`}
@@ -159,7 +209,7 @@ export function ProductRender({
             sequence rendering nothing. */}
         <g
           className={
-            assemble
+            assemble && seen
               ? cn('assemble', assembleVariant === 'card' && 'assemble-card')
               : undefined
           }
