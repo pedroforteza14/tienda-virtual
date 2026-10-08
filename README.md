@@ -166,7 +166,7 @@ only, so no card data ever reaches this origin.
 and the rate-limit counters all live behind one `CommerceStore` interface with two drivers. See
 below.
 
-**Quality** — 332 unit and integration tests, 314 browser tests across desktop and mobile covering
+**Quality** — 332 unit and integration tests, 320 browser tests across desktop and mobile covering
 the purchase path, accessibility (landmarks, focus management, keyboard, reduced motion) and visual
 QA (overflow, clipping, tap targets, layout shift) at all six required viewports.
 

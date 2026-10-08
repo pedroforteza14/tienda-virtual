@@ -241,3 +241,68 @@ test.describe('forms', () => {
     expect(viewport).not.toMatch(/maximum-scale\s*=\s*1\b/);
   });
 });
+
+/**
+ * WCAG 2.2 — 2.4.11 / 2.4.12, Focus Not Obscured.
+ *
+ * The stylesheet gave `scroll-margin-top` to anchored sections and headings,
+ * which is what auditing *links* turns up. But Tab scrolls the focused element
+ * into view as well, and a product card carries no id — so tabbing down the
+ * catalogue parked each card with its top edge beneath the fixed header and the
+ * keyboard user lost sight of their own position. 21 of the elements reached by
+ * tabbing landed there.
+ *
+ * This asserts the AA line — **entirely** hidden — not the AAA one. I wrote it
+ * the strict way first and it failed on things no CSS rule can fix: a fixed bar
+ * overlaps whatever is passing under it, and `scroll-margin` only applies when
+ * the browser actually scrolls an element into view, so an element already in
+ * the viewport and partly under the bar is never repositioned. Asserting the
+ * unachievable would have meant deleting the test a week later. The scroll
+ * margin still does its job — the elements the browser DOES scroll to now land
+ * clear of the header — and this guards the line that can be held.
+ */
+test.describe('focus is never parked under a fixed bar', () => {
+  for (const route of ['/tienda', '/', '/producto/iphone-17-pro-max']) {
+    test(`tabbing through ${route}`, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState('networkidle');
+
+      const obscured: string[] = [];
+      for (let i = 0; i < 60; i += 1) {
+        await page.keyboard.press('Tab');
+        const hit = await page.evaluate(() => {
+          const el = document.activeElement as HTMLElement | null;
+          if (!el || el === document.body) return null;
+
+          for (const bar of document.querySelectorAll('header, nav')) {
+            const style = getComputedStyle(bar);
+            if (style.position !== 'fixed') continue;
+            // A bar's own controls overlap it by definition.
+            if (bar.contains(el)) continue;
+
+            const rect = el.getBoundingClientRect();
+            // A visually-hidden control (an `sr-only` radio is 1x1) is not
+            // "obscured"; it is deliberately not drawn, and its label carries
+            // the visible target. Geometrically it fits inside any bar.
+            if (rect.width < 8 || rect.height < 8) continue;
+            const barRect = bar.getBoundingClientRect();
+            const fullyHidden =
+              rect.top >= barRect.top &&
+              rect.bottom <= barRect.bottom &&
+              rect.left >= barRect.left &&
+              rect.right <= barRect.right;
+            if (fullyHidden) {
+              return (el.textContent || el.getAttribute('aria-label') || el.tagName)
+                .trim()
+                .slice(0, 40);
+            }
+          }
+          return null;
+        });
+        if (hit) obscured.push(hit);
+      }
+
+      expect(obscured, obscured.join('\n')).toEqual([]);
+    });
+  }
+});

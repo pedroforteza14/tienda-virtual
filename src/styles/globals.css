@@ -39,6 +39,19 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     scrollbar-gutter: stable;
+    /*
+      The bars are fixed, so the viewport is smaller than it looks.
+      
+      `scroll-margin` on each element is not enough on its own: the browser only
+      scrolls something into view when it considers it out of view, and an
+      element sitting under a fixed bar is still inside the layout viewport, so
+      nothing moves and the focus ring is hidden behind the bar. `scroll-padding`
+      on the scrollport is the mechanism for this — it tells the browser that
+      those strips are not part of the viewing region, so an element that lands
+      there IS scrolled, into the part that can actually be seen.
+    */
+    scroll-padding-top: calc(var(--header-h) + 1rem);
+    scroll-padding-bottom: calc(var(--nav-bottom-h) + 1rem);
   }
 
   body {
@@ -54,11 +67,38 @@
     /* Belt and braces against a rogue horizontally-overflowing child. The real
        fix is always the child; this stops one bug ruining every page. */
     overflow-x: clip;
+    /*
+      Reserve the fixed mobile bar on the WHOLE document, not just `<main>`.
+      
+      `<main>` already carried `pb-20`, but the footer sits outside it, so the
+      last footer links could be scrolled to a position where the bar covered
+      them completely — and a keyboard user tabbing into the footer focused
+      something they could not see at all. That is WCAG 2.4.11 (AA), not the
+      AAA near-miss: entirely hidden, not partly. Zero at `md`, where the bar
+      does not exist.
+    */
+    padding-bottom: var(--nav-bottom-h);
   }
 
   /* An anchored section must not land underneath the fixed header. */
   :where(section, article, h1, h2, h3, [id]) {
     scroll-margin-top: calc(var(--header-h) + 1.5rem);
+  }
+
+  /*
+    Neither must a focused control.
+    
+    The rule above covers anchors and headings, which is what an audit of
+    *links* turns up. But Tab scrolls the focused element into view too, and a
+    product card has no id, so tabbing down a grid parked each card with its top
+    edge under the fixed header: you could not see the thing you had just
+    focused. WCAG 2.4.11 fails only on a fully hidden element, so this was 2.4.12
+    (AAA) rather than a conformance break — and still the difference between a
+    keyboard user following their position and losing it.
+  */
+  :where(a, button, input, select, textarea, summary, [tabindex]) {
+    scroll-margin-top: calc(var(--header-h) + 1rem);
+    scroll-margin-bottom: calc(var(--nav-bottom-h) + 1rem);
   }
 
   :where(h1, h2, h3, h4, p, figure, blockquote, dl, dd) {
