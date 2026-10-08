@@ -161,7 +161,7 @@ export function guarded<S extends z.ZodTypeAny | undefined = undefined>(
           } catch {
             return jsonError('bad_request', {
               requestId,
-              message: 'El cuerpo del pedido no es JSON válido.',
+              message: 'No pudimos leer los datos enviados.',
               headers: limitHeaders,
             });
           }

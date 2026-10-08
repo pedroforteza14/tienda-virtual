@@ -176,6 +176,7 @@ export function Hero({ product }: { product: HeroProduct }) {
                 className="h-full w-full [transform-style:preserve-3d]"
                 specular
                 priority
+                assemble
               />
             </motion.div>
           </div>

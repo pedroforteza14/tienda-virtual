@@ -25,7 +25,7 @@ Nothing travels more than ~120 px without also scaling.
 
 ---
 
-## The four signature moves
+## The five signature moves
 
 1. **Aperture open** (`/` hero) — the brass ring scales `0.2 → 2.4` across the first viewport of
    scroll while the device inside scales `1.35 → 1` and the vignette lifts. Scroll-linked, so it is
@@ -37,6 +37,20 @@ Nothing travels more than ~120 px without also scaling.
    stagger per row, mono label fading in behind it. This is the site's rhythm signature.
 4. **Specular sweep** — a soft linear gradient crosses a device render on hover and while it is
    scroll-pinned, so the object reads as a lit physical thing. 2 % opacity on ink.
+5. **Assembly** (`/` hero and the product page) — the object builds itself from its parts: contact
+   shadow, chassis, glass, then the details, each rising 8 units and fading in over `--dur-base`
+   with a 45 ms stagger. 725 ms in total, inside the 900 ms this system reserves for a hero resolve.
+
+   It costs nothing to author. Every device is already drawn as an ordered list of SVG shapes, and
+   the order they are written in is the order a technician would assemble them in — the animation is
+   only the stagger. It is plain CSS rather than `motion` for the same reason: no state, no
+   interruption, and it still runs when JavaScript never arrives, which is exactly the connection
+   where a product appearing out of nothing is worth most.
+
+   Deliberately **not** on listing cards, the cart or search. Staging says animate one thing at a
+   time; twelve cards assembling at once is not staging, it is weather. On the product page it runs
+   on first mount only, because the stage is keyed on the variant and replaying the build on every
+   colour change would tax the interaction the configurator exists for.
 
 ---
 

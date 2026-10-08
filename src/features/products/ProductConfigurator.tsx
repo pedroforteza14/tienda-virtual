@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { formatARS } from '@/lib/money';
 import { site, whatsappLink } from '@/config/site';
@@ -87,6 +87,21 @@ export function ProductConfigurator({
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
 
+  /**
+   * True until the entrance has played once.
+   *
+   * 1200ms against a 725ms sequence, so a slow device that starts the animation
+   * late still finishes it. The failure mode if it is cut short is benign and
+   * worth knowing: dropping the class removes the `animation` declaration, and
+   * the parts fall back to their base style — opacity 1, no transform. A cut
+   * lands on the assembled object, never on an invisible one.
+   */
+  const [firstPaint, setFirstPaint] = useState(true);
+  useEffect(() => {
+    const id = window.setTimeout(() => setFirstPaint(false), 1200);
+    return () => window.clearTimeout(id);
+  }, []);
+
   const variant = useMemo(
     () =>
       variants.find(
@@ -141,6 +156,11 @@ export function ProductConfigurator({
               <ProductRender
                 kind={render}
                 color={color}
+                // First mount only. The stage is keyed on the variant, so
+                // leaving this on would replay the whole assembly every time
+                // someone tries another colour — turning a one-off resolve into
+                // a tax on the interaction the configurator exists for.
+                assemble={firstPaint}
                 // Per-variant, so changing the colour changes the photograph —
                 // which is the entire reason a configurator exists.
                 photography={variant?.photography}

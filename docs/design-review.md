@@ -198,7 +198,7 @@ account. The logger redacts by key name recursively, so redaction is not a calle
 | Is the product the protagonist? | Yes — after being literally invisible twice during the build. |
 | Does the user know what to do? | Yes. Price and a primary action are on the first screen of every commercial page. |
 | Does mobile work? | Yes, and it is a separate design. |
-| Is it fast? | Reasonably. 103 kB baseline, 125 kB catalogue, 168 kB home, and CLS 0.0000 after the rail fix. The home page is the price of the narrative. |
+| Is it fast? | Reasonably. 103 kB baseline, 125 kB catalogue, 168 kB home, and CLS 0.0009 on the home (0.0000 until the hero height became a floor; five consecutive runs agree, against a 0.1 budget) and 0 elsewhere. The home page is the price of the narrative. |
 | Are there security risks? | Yes, and they are enumerated above and in `SECURITY.md` rather than being implied away. |
 
 ---

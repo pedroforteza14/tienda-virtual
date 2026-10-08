@@ -46,9 +46,18 @@ export function Badge({
 export function StockBadge({ stock }: { stock: number }) {
   if (stock <= 0) return <Badge tone="out">Sin stock</Badge>;
   if (stock <= 3) {
+    /**
+     * Both halves agree, or neither does.
+     *
+     * This read "Últimas 1 unidad" — a plural adjective against a singular
+     * noun, which is the Spanish form of the "1 items" defect. Pluralising the
+     * noun alone is not enough in a language that inflects the adjective too,
+     * so the whole phrase switches rather than one word of it. "Queda" also
+     * says the useful thing more directly than "últimas".
+     */
     return (
       <Badge tone="low">
-        Últimas {stock} {stock === 1 ? 'unidad' : 'unidades'}
+        {stock === 1 ? 'Queda 1 unidad' : `Quedan ${stock} unidades`}
       </Badge>
     );
   }

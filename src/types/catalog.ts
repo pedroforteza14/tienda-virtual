@@ -33,7 +33,7 @@ export type UseCase = (typeof USE_CASES)[number];
  * `width` and `height` are the file's intrinsic pixel size and are **required**:
  * `next/image` reserves the box from that ratio before the bytes arrive, and
  * without it the image pops in and pushes the page around. This storefront
- * measures a cumulative layout shift of 0.0000 and the number was expensive to
+ * measures a cumulative layout shift of 0.0009 and the number was expensive to
  * get; a photo without dimensions is how it would be lost.
  */
 export interface Photo {

@@ -36,16 +36,30 @@ const STATUS: Record<ApiErrorCode, number> = {
 };
 
 /** Customer-facing copy. Deliberately uninformative about internals. */
+/**
+ * ⚠️ Never use the word "pedido" here.
+ *
+ * In this storefront a *pedido* is an ORDER: the route is `/pedido/[reference]`,
+ * the page is titled "Tu pedido", the account lists "Tus pedidos". Three of
+ * these messages used it in its other sense — an HTTP request — so a shopper
+ * who tripped a validation error at checkout read "No pudimos procesar el
+ * pedido" and concluded their purchase had failed, when nothing had been
+ * ordered. The word is not ambiguous to a developer and is badly ambiguous to
+ * a customer, and the customer is who reads it.
+ */
 const DEFAULT_MESSAGE: Record<ApiErrorCode, string> = {
-  bad_request: 'No pudimos procesar el pedido.',
+  bad_request: 'No pudimos procesar la solicitud.',
   validation_failed: 'Revisá los datos ingresados.',
   unauthorized: 'Necesitás iniciar sesión.',
   forbidden: 'No tenés permiso para esta acción.',
+  // "El estado cambió" is how the server thinks about it, not the shopper.
+  conflict: 'Algo cambió mientras tanto. Volvé a intentar.',
   not_found: 'No encontramos lo que buscás.',
-  conflict: 'El estado cambió. Volvé a intentar.',
-  payload_too_large: 'El pedido es demasiado grande.',
-  unsupported_media_type: 'Formato no soportado.',
-  rate_limited: 'Demasiados intentos. Esperá un momento.',
+  payload_too_large: 'Enviaste demasiados datos.',
+  // "Soportado" is a calque of "supported"; "admitido" is the Spanish.
+  unsupported_media_type: 'Formato no admitido.',
+  // Says how long, like the login lockout does. "Un momento" is not a duration.
+  rate_limited: 'Demasiados intentos. Esperá unos minutos.',
   server_error: 'Algo salió mal de nuestro lado. Ya lo estamos viendo.',
 };
 

@@ -75,6 +75,15 @@ export interface ProductRenderProps {
    * thumbnail below passes its own.
    */
   sizes?: string;
+  /**
+   * Build the object in from its parts on mount.
+   *
+   * Reserved for the two surfaces where the product is the protagonist — the
+   * home hero and the product page. Staging says animate one thing at a time,
+   * and twelve cards assembling at once on a listing is not staging, it is
+   * weather. It applies to the drawing only; a photograph has no parts.
+   */
+  assemble?: boolean;
   /** Adds the scroll/hover specular sweep layer. Off for small thumbnails. */
   specular?: boolean;
   priority?: boolean;
@@ -89,6 +98,7 @@ export function ProductRender({
   sizes = HERO_SIZES,
   specular = false,
   priority = false,
+  assemble = false,
 }: ProductRenderProps) {
   // Called unconditionally and before any early return: hooks are not optional.
   const id = defsId(useId());
@@ -135,7 +145,10 @@ export function ProductRender({
         preserveAspectRatio="xMidYMid meet"
       >
         <Defs id={id} color={color} />
-        {DRAWINGS[kind]({ id })}
+        {/* The parts are wrapped so the stagger applies to the shapes and not to
+            `<defs>`, which has no geometry and would spend a step of the
+            sequence rendering nothing. */}
+        <g className={assemble ? 'assemble' : undefined}>{DRAWINGS[kind]({ id })}</g>
       </svg>
       {specular ? <span className="specular" aria-hidden="true" /> : null}
     </div>

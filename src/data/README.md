@@ -52,7 +52,7 @@ Conventions worth keeping:
   `photoPath()` builds those names. Nothing enforces it; it just keeps a few hundred files sorted.
 - **`width` and `height` are the file's real pixel size and are required.** `next/image` reserves
   the box from that ratio before the bytes arrive. This storefront measures a cumulative layout
-  shift of 0.0000 and that number was expensive to get; a photo with the wrong dimensions is how it
+  shift of 0.0009 and that number was expensive to get; a photo with the wrong dimensions is how it
   is lost.
 - **Square, on a transparent or near-white background**, because the renders are square and the
   layouts reserve a square. A 4:3 photo will letterbox rather than break, but it will look wrong
