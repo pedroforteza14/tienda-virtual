@@ -125,6 +125,81 @@ describe('palette contrast', () => {
    */
 });
 
+/**
+ * The light surface, measured rather than asserted in a comment.
+ *
+ * Every ratio above is a dark-surface one: the `[data-surface='light']` block
+ * had no test at all, and it showed. Its `--accent` carried the comment
+ * "darkened brass: 4.6:1 on bone" and measured 4.25:1 — while being the colour
+ * of the policy links, which are body text. `--text-faint` measured 3.14:1 on
+ * bone and 2.84:1 on the sunken surface, carrying the breadcrumb and the
+ * "última actualización" line.
+ *
+ * Nobody saw it because the surface itself was broken (see the `@theme inline`
+ * note in tokens.css): the light tokens were being defined and then ignored by
+ * every utility. A ratio nobody can see is still a ratio that ships the moment
+ * the bug above it is fixed.
+ */
+describe('light surface contrast', () => {
+  const block = (() => {
+    const start = css.indexOf("body:has([data-surface='light']) {");
+    if (start === -1) throw new Error("the [data-surface='light'] block moved");
+    return css.slice(start, css.indexOf('\n}', start));
+  })();
+
+  /** Resolves one level of `var(--color-*)` back to the palette. */
+  function light(name: string): string {
+    const match = new RegExp(`--${name}:\\s*([^;]+);`).exec(block);
+    if (!match?.[1]) throw new Error(`--${name} is not declared on the light surface`);
+    const value = match[1].trim();
+    if (value.startsWith('#')) return value;
+    const indirect = /^var\(--([a-z-]+)\)$/.exec(value);
+    if (!indirect?.[1]) throw new Error(`--${name} is not a colour this test can resolve: ${value}`);
+    return token(indirect[1]);
+  }
+
+  const SURFACES = () => [
+    ['bone', light('surface')],
+    ['raised', light('surface-raised')],
+    ['sunken', light('surface-sunken')],
+  ] as const;
+
+  it('body text on bone reaches AAA', () => {
+    for (const [name, bg] of SURFACES()) {
+      expect(ratio(light('text'), bg), name).toBeGreaterThanOrEqual(7);
+    }
+  });
+
+  it('every text tone reaches AA on all three light surfaces', () => {
+    for (const tone of ['text-dim', 'text-faint']) {
+      for (const [name, bg] of SURFACES()) {
+        expect(ratio(light(tone), bg), `${tone} on ${name}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('the accent carries text on light, because the policy links are text', () => {
+    for (const [name, bg] of SURFACES()) {
+      expect(ratio(light('accent'), bg), `accent on ${name}`).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(light('accent-hover'), bg), `hover on ${name}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('text on an accent fill is legible, and the focus ring is visible', () => {
+    expect(ratio(light('on-accent'), light('accent'))).toBeGreaterThanOrEqual(4.5);
+    for (const [name, bg] of SURFACES()) {
+      // 1.4.11: a non-text indicator needs 3:1, not 4.5:1.
+      expect(ratio(light('focus'), bg), `focus on ${name}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('keeps the tones ordered: dim is stronger than faint', () => {
+    expect(ratio(light('text-dim'), light('surface'))).toBeGreaterThan(
+      ratio(light('text-faint'), light('surface')),
+    );
+  });
+});
+
 describe('token discipline', () => {
   /**
    * A token nothing uses is dead weight the tests were protecting.

@@ -14,7 +14,16 @@ See `docs/creative-direction.md` §4 for the palette and the rationale. Mechanic
 - Semantic aliases sit on top of raw values: `--surface`, `--surface-raised`, `--text`,
   `--text-dim`, `--text-faint`, `--line`, `--accent`, `--accent-hover`, `--focus`.
 - Components use **semantic** names only. `--brass` appears in `tokens.css` and nowhere else.
-- The light surface (`/legal`, checkout confirmation) flips the semantic layer, not the components.
+- The light surface (`/legal`, the order confirmation) flips the semantic layer, not the components.
+  Two mechanics make that true, and both were once missing:
+  - The `--color-*` aliases Tailwind generates utilities from live in a **`@theme inline`** block. A
+    plain `@theme` resolves `var(--surface)` once, on `:root`, and every utility inherits that one
+    dark value — so `bg-surface` stayed ink on a page that had asked for bone, while hand-authored
+    rules like `.u-label`, which read `var(--text-dim)` directly, took the light value. The surface
+    was half-applied for months and looked deliberate.
+  - The flip also applies to `body:has([data-surface='light'])`. The header, footer and tab bar are
+    siblings of the page wrapper, and custom properties do not flow sideways: without this the
+    wordmark was bone on bone — invisible — and the nav measured 2.16 : 1.
 
 ### Contrast — measured, not assumed
 Computed with the WCAG 2.1 relative-luminance formula, not estimated. The script is in
@@ -26,20 +35,33 @@ threshold — so this table cannot silently rot.
 | `--bone` on `--ink` | **16.87 : 1** | AAA |
 | `--bone-dim` on `--ink` | **7.78 : 1** | AAA |
 | `--bone-dim` on `--ink-raised` | **7.28 : 1** | AAA — drawer and menu copy |
-| `--bone-faint` on `--ink` | **3.50 : 1** | Non-text only — never body copy |
+| `--bone-faint` on `--ink` | **4.87 : 1** | AA — lifted from 3.50 : 1, which no test defended |
 | `--brass` on `--ink` | **6.28 : 1** | AA text, AAA large |
 | `--ink` on `--brass` | **6.28 : 1** | AA — the primary CTA |
 | `--signal-ok` on `--ink` | **5.09 : 1** | AA |
 | `--signal-low` on `--ink` | **6.58 : 1** | AA |
 | `--signal-err` on `--ink` | **5.52 : 1** | AA |
 
+The light surface, measured on all three of its grounds — bone `#f2ede4`, raised `#fbf9f5`, sunken
+`#e8e2d6`. These had no test until the surface was repaired, and two of them were wrong:
+
+| Token | On bone | On raised | On sunken | Verdict |
+| --- | --- | --- | --- | --- |
+| `--text` | **16.87 : 1** | 18.71 : 1 | 15.25 : 1 | AAA |
+| `--text-dim` | **6.26 : 1** | 6.94 : 1 | 5.66 : 1 | AA |
+| `--text-faint` | **5.12 : 1** | 5.68 : 1 | 4.63 : 1 | AA — was 3.14 : 1 and carried the breadcrumb |
+| `--accent` | **5.05 : 1** | 5.60 : 1 | 4.57 : 1 | AA — was 4.25 : 1 under a comment claiming 4.6 : 1 |
+| `--accent-hover` | **6.12 : 1** | 6.79 : 1 | 5.53 : 1 | AA |
+| `--on-accent` on `--accent` | **5.05 : 1** | — | — | AA — the CTA on paper |
+
 Two notes on how this table shaped the palette rather than just describing it:
 
 - The first error red chosen (`#A8443A`) measured **3.33 : 1** and was rejected. `--signal-err` is
   now `#D06A5A`; the deeper oxide survives as `--signal-err-deep` for borders and fills, where no
   text sits on it.
-- `--bone-faint` is the one token that cannot carry text. It is used for the ledger coordinates and
-  disabled affordances, and in both cases the information is also conveyed another way.
+- `--bone-faint` was the one token that could not carry text, at 3.50 : 1 — and it carried the
+  ledger coordinates anyway. It was lifted to `#827e77` (4.87 : 1 on ink, 4.56 : 1 on raised); the
+  test that used to assert it stayed *below* 4.5 : 1, defending the bug, was deleted.
 
 ---
 
@@ -72,9 +94,10 @@ Prose is capped at `--measure-prose` (62ch). Nothing readable is ever wider.
 `--r-xs` 2 px · `--r-sm` 4 px · `--r-md` 8 px · `--r-lg` 14 px · `--r-xl` 22 px · `--r-full` 999px.
 Device bodies use their own real-world radii, not these.
 
-Hairlines are `1px` at `--line`. **There are no drop shadows on ink.** Elevation is communicated by
-surface lightness (`--surface` → `--surface-raised`) and by a single hairline. Shadows appear only
-on the light surface, and only as `--shadow-sheet`.
+Hairlines are `1px` at `--line`. **There are no drop shadows anywhere.** Elevation is communicated
+by surface lightness (`--surface` → `--surface-raised`) and by a single hairline. There was a
+`--shadow-sheet` reserved for the light surface; nothing ever used it, and the token-governance
+test removed it.
 
 ---
 

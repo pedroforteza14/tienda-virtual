@@ -41,34 +41,6 @@
   --color-signal-err: #d06a5a;
   /* Deeper oxide for borders and fills only — 3.33:1, so never under text. */
   --color-signal-err-deep: #a8443a;
-
-  /**
-   * Semantic colours, registered in the `--color-*` namespace so Tailwind
-   * generates real utilities for them (`text-fg-dim`, `bg-surface-raised`,
-   * `border-line`).
-   *
-   * This is not sugar. Writing a colour as `text-[var(--text-dim)]` is ambiguous
-   * to both Tailwind (which guessed wrong and produced a *colour* where a font
-   * size was meant) and to `tailwind-merge` (which classified it as a font size
-   * and silently discarded the real one). `cn('text-tiny text-[var(--text-dim)]')`
-   * returned `'text-[var(--text-dim)]'` — the size was dropped, everywhere, and
-   * nothing failed. Typed utilities make both tools classify correctly.
-   *
-   * Each one points at the semantic alias rather than a raw value, so the light
-   * surface still flips everything by redefining the aliases alone.
-   */
-  --color-surface: var(--surface);
-  --color-surface-raised: var(--surface-raised);
-  --color-surface-sunken: var(--surface-sunken);
-  --color-fg: var(--text);
-  --color-fg-dim: var(--text-dim);
-  --color-fg-faint: var(--text-faint);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-on-accent: var(--on-accent);
-  --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
-
   /* ------------------------------------------------------------- typography */
   /* Faces are injected by next/font in layout.tsx, which self-hosts them at
      build time: no runtime request to a font CDN, and no CDN origin needed in
@@ -129,6 +101,55 @@
   --breakpoint-2xl: 90rem; /* 1440px — content caps here */
 }
 
+/**
+ * Semantic colours, registered in the `--color-*` namespace so Tailwind
+ * generates real utilities for them (`text-fg-dim`, `bg-surface-raised`,
+ * `border-line`).
+ *
+ * Registering them is not sugar. Writing a colour as `text-[var(--text-dim)]` is
+ * ambiguous to both Tailwind (which guessed wrong and produced a *colour* where
+ * a font size was meant) and to `tailwind-merge` (which classified it as a font
+ * size and silently discarded the real one): `cn('text-tiny
+ * text-[var(--text-dim)]')` returned `'text-[var(--text-dim)]'` — the size was
+ * dropped, everywhere, and nothing failed. Typed utilities make both tools
+ * classify correctly.
+ *
+ * The `inline` is the whole point, not a style preference.
+ *
+ * A plain `@theme` compiles to declarations on `:root`, and a custom property's
+ * var() references are substituted **where it is declared**. So `@theme {
+ * --color-surface: var(--surface) }` resolves `--surface` once, at `:root`,
+ * against the dark value, and every descendant inherits that already-resolved
+ * colour. `[data-surface='light']` could redefine `--surface` all it liked and
+ * `bg-surface` would stay dark.
+ *
+ * That is not theory: it shipped. The legal pages and the order-confirmation
+ * panel asked for the light surface and rendered on ink, with each *utility*
+ * (`bg-surface`, `text-fg-dim`) on the dark value while each hand-authored rule
+ * (`.u-label`, which reads `var(--text-dim)` directly and so re-resolves per
+ * element) took the light one. Half a theme, and the collision measured 2.69:1
+ * — found by an axe scan, not by eye, because a dim label on a dark background
+ * looks deliberate.
+ *
+ * `inline` makes Tailwind substitute the value into the utility itself —
+ * `.bg-surface { background-color: var(--surface) }` — so it re-resolves on
+ * whichever element it lands on, exactly like the hand-authored rules. The
+ * surface flip is then one block again, as the comment below always claimed.
+ */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-fg: var(--text);
+  --color-fg-dim: var(--text-dim);
+  --color-fg-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+}
+
 :root {
   /* ---------------------------------------------------- semantic aliases */
   /* What components actually reference. Flipping a surface from dark to light
@@ -178,27 +199,46 @@
 }
 
 /**
- * The light surface. Applied to `/legal` and the order-confirmation panel, where
+ * The light surface. Applied to `/legal` and the order-confirmation page, where
  * long-form reading and printing matter more than atmosphere.
  *
  * Only the semantic layer changes. No component knows which surface it is on.
+ *
+ * The `:has()` half is what makes that last sentence true of the **chrome**, not
+ * only of the page. The header, the footer and the mobile tab bar are rendered by
+ * the root layout, so they are siblings of the page wrapper and custom properties
+ * do not flow sideways: with the attribute alone they kept the dark palette while
+ * the page went bone, and the wordmark was bone-on-bone — invisible — with the
+ * nav labels at 2.16:1. Flipping the body when it contains a light page puts the
+ * chrome on the same surface as the content under it.
+ *
+ * Both light surfaces are whole pages (`min-h-dvh` wrappers). If a light *panel*
+ * inside a dark page is ever wanted, it needs its own attribute, or it will take
+ * the whole document with it.
  */
-[data-surface='light'] {
+[data-surface='light'],
+body:has([data-surface='light']) {
   --surface: var(--color-bone);
   --surface-raised: #fbf9f5;
   --surface-sunken: #e8e2d6;
 
   --text: var(--color-ink);
-  --text-dim: #5a564e;
-  --text-faint: #8a857c;
+  --text-dim: #5a564e; /* 6.26:1 on bone, 5.66:1 on the sunken surface */
+  /* Lifted from #8a857c, which measured 3.14:1 on bone and 2.84:1 on the sunken
+     surface — it carries the breadcrumb and the "última actualización" line, so
+     it is text, not decoration. Now 5.12:1 / 4.63:1. */
+  --text-faint: #67635c;
 
-  --accent: #8d6a33; /* darkened brass: 4.6:1 on bone, so it can carry text */
-  --accent-hover: #6f5327;
-  --on-accent: var(--color-bone);
+  /* Darkened brass. The previous #8d6a33 was commented "4.6:1 on bone"; it
+     measured 4.25:1 there and 3.84:1 on the sunken surface, and it carries the
+     policy links, which are body text. Now 5.05:1 / 4.57:1. */
+  --accent: #7e5f2e;
+  --accent-hover: #6f5327; /* 6.12:1 on bone */
+  --on-accent: var(--color-bone); /* 5.05:1 on the accent above */
 
   --line: color-mix(in oklab, var(--color-ink) 14%, transparent);
   --line-strong: color-mix(in oklab, var(--color-ink) 26%, transparent);
-  --focus: #8d6a33;
+  --focus: #7e5f2e;
 
   color-scheme: light;
 }

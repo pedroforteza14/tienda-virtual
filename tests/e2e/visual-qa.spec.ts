@@ -435,3 +435,74 @@ test.describe('every product drawing settles fully assembled', () => {
     }
   }
 });
+
+/**
+ * The light surface reaches the page **and the chrome**.
+ *
+ * `/legal` and the order confirmation ask for bone with `data-surface="light"`,
+ * and for months they rendered on ink. The semantic tokens were being redefined
+ * correctly; Tailwind had resolved its `--color-*` aliases once at `:root`, so
+ * every utility kept the dark value while every hand-authored rule took the
+ * light one. Nothing failed — a dark page simply stayed dark, which is what a
+ * dark page looks like.
+ *
+ * Fixing that exposed the second half: the header, the footer and the tab bar
+ * are siblings of the page wrapper, so they kept the dark palette over a bone
+ * page. The wordmark was bone on bone, invisible, and the nav measured 2.16:1.
+ *
+ * So this asserts the outcome rather than the mechanism: the page is actually
+ * light, and the chrome over it is readable. Both halves of the bug fail it.
+ */
+test.describe('the light surface applies to the whole document', () => {
+  const luminance = (rgb: [number, number, number]): number => {
+    const [r, g, b] = rgb.map((channel) => {
+      const value = channel / 255;
+      return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+
+  for (const route of ['/legal/garantia', '/legal/privacidad']) {
+    test(`${route} is rendered on bone, chrome included`, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState('networkidle');
+
+      const parse = (value: string): [number, number, number] => {
+        const parts = value.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];
+        return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+      };
+
+      const measured = await page.evaluate(() => {
+        const wrapper = document.querySelector('[data-surface="light"]');
+        const header = document.querySelector('header');
+        const wordmark = header?.querySelector('a[href="/"]');
+        return {
+          bodyBg: getComputedStyle(document.body).backgroundColor,
+          wrapperBg: wrapper ? getComputedStyle(wrapper).backgroundColor : null,
+          wordmarkColor: wordmark ? getComputedStyle(wordmark).color : null,
+        };
+      });
+
+      // Bone is light; ink is not. Anything above 0.5 is the paper surface.
+      expect(luminance(parse(measured.bodyBg))).toBeGreaterThan(0.5);
+      expect(measured.wrapperBg).not.toBeNull();
+      expect(luminance(parse(measured.wrapperBg!))).toBeGreaterThan(0.5);
+
+      // The wordmark sits on that surface with no background of its own, so it
+      // has to be the dark end of the palette or it disappears into the page.
+      expect(measured.wordmarkColor).not.toBeNull();
+      const contrast =
+        (luminance(parse(measured.bodyBg)) + 0.05) /
+        (luminance(parse(measured.wordmarkColor!)) + 0.05);
+      expect(contrast).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  test('a dark page is untouched by it', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    const parts = bodyBg.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];
+    expect(luminance([parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0])).toBeLessThan(0.1);
+  });
+});
