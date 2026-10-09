@@ -119,7 +119,14 @@ export function checkContentType(request: Request): boolean {
 export function logRejection(
   kind: 'csrf' | 'origin',
   reason: string,
-  context: { requestId: string; path: string },
+  /**
+   * `received` and `allowed` are optional and only an origin rejection sends
+   * them. Neither is a secret — one is the public site URL, the other a header
+   * anyone can set — and without them the log says two values differed without
+   * saying which, which is the difference between a five-minute fix and a lost
+   * afternoon for the misconfiguration that causes this most often.
+   */
+  context: { requestId: string; path: string; received?: string; allowed?: string },
 ): void {
   logger.security(kind === 'csrf' ? 'csrf.rejected' : 'origin.rejected', { reason, ...context });
 }

@@ -17,6 +17,7 @@ import {
   isMutating,
   logRejection,
 } from '@/server/security/request';
+import { env } from '@/config/env';
 import {
   getAuthSession,
   sessionIdFromRequest,
@@ -95,7 +96,23 @@ export function guarded<S extends z.ZodTypeAny | undefined = undefined>(
     /* 2 — origin ------------------------------------------------------------- */
     const origin = checkOrigin(request);
     if (!origin.ok) {
-      logRejection('origin', origin.reason, { requestId, path });
+      /**
+       * Log what arrived and what was allowed, not just that they differed.
+       *
+       * This rejection has one overwhelmingly common cause and it is not an
+       * attack: `NEXT_PUBLIC_SITE_URL` is inlined at BUILD time, so a deploy
+       * whose value does not match the host it is served from refuses every
+       * mutation — add to cart, checkout, login — while the site browses
+       * perfectly. "No tenés permiso para esta acción" reads like a
+       * permissions bug and is a configuration one. Neither value is a secret:
+       * one is the public site URL, the other a header anyone can send.
+       */
+      logRejection('origin', origin.reason, {
+        requestId,
+        path,
+        received: request.headers.get('origin') ?? '(none)',
+        allowed: env().allowedOrigins.join(', '),
+      });
       return jsonError('forbidden', { requestId, headers: limitHeaders });
     }
 

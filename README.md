@@ -93,6 +93,27 @@ NEXT_PUBLIC_ALLOW_INDEXING=false   # until it is the real shop
 Generate the secret with the command under **Quick start** rather than inventing one, and set it in
 Vercel's own environment-variable UI — not in a file, and not pasted into a chat or an issue.
 
+> **`NEXT_PUBLIC_SITE_URL` is read at build time, not at run time.** Next inlines every
+> `NEXT_PUBLIC_*` variable into the compiled output, and this one feeds the CSRF origin allow-list.
+> So a build made with one value and served from another host **refuses every mutation** — add to
+> cart, log in, checkout — with `403 forbidden` and "No tenés permiso para esta acción", while the
+> rest of the site browses perfectly. It reads like a permissions bug and it is a configuration one.
+>
+> **Change the variable, then redeploy.** Editing it in Vercel's UI does nothing to a build that
+> already exists, and **Redeploy** must run with *Use existing Build Cache* off or the old value
+> survives in the cached bundle.
+>
+> Preview deploys are handled for you: the allow-list also includes whatever `VERCEL_URL`,
+> `VERCEL_BRANCH_URL` and `VERCEL_PROJECT_PRODUCTION_URL` say at run time, which is how the same
+> artefact can be served from a per-push preview host without every mutation 403-ing. Those are set
+> by the platform, not by the browser, so trusting them adds no attacker capability. On a host that
+> does not set them — your own VPS, a container — `NEXT_PUBLIC_SITE_URL` is the whole list and it
+> must match the host exactly, scheme and port included.
+>
+> When it does go wrong the logs say so: an `origin.rejected` security event prints both the origin
+> that arrived and the allow-list it was compared against, so the mismatch is one line rather than
+> an afternoon.
+
 The app boots with `memory` and warns loudly in production; with `upstash` set and either credential
 missing it refuses to start rather than falling back to a driver that would quietly lose orders.
 

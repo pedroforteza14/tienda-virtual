@@ -145,7 +145,7 @@ Next pins a vulnerable version internally; removing it reintroduces four advisor
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `SESSION_SECRET` | **Production** | 32+ random bytes, base64. Rotating it invalidates every session and guest cart. The server refuses to serve without it. |
-| `NEXT_PUBLIC_SITE_URL` | Yes | Must be https in production (loopback excepted). Drives canonical URLs and the origin allow-list. |
+| `NEXT_PUBLIC_SITE_URL` | Yes | Must be https in production (loopback excepted). Drives canonical URLs and the origin allow-list. **Inlined at build time** — see the note below the table. |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | No | `false` on staging, so robots.txt disallows everything. |
 | `PAYMENT_PROVIDER` | No | `mock` \| `mercadopago` \| `stripe`. |
 | `MERCADOPAGO_ACCESS_TOKEN` / `_WEBHOOK_SECRET` | If used | Server-only. Production refuses to start without the webhook secret. |
@@ -154,6 +154,33 @@ Next pins a vulnerable version internally; removing it reintroduces four advisor
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | If `upstash` | Server-only; production refuses to start with the driver set and either missing. Never prefix the token `NEXT_PUBLIC_`. |
 | `STORE_PREFIX` | No | Key namespace, so one Redis database can serve staging and production. |
 | `LOG_LEVEL` | No | `debug` \| `info` \| `warn` \| `error`. |
+
+### The one that bites: `NEXT_PUBLIC_SITE_URL` is a build-time constant
+
+Next inlines every `NEXT_PUBLIC_*` variable into the compiled output. This one also feeds
+`env().allowedOrigins`, which the origin check (layer 2 of the CSRF defence) compares each mutation
+against. So the value that matters is the one present when `next build` ran, not the one in the
+host's environment when the server starts.
+
+A build whose value does not name the host it is served from rejects **every** state-changing
+request — add to cart, login, checkout, webhooks from a different origin — with `403 forbidden`,
+while every page renders normally. The failure mode looks like an authorisation bug and is a
+configuration one, so it is worth recognising on sight.
+
+Two things keep it from being a trap in practice:
+
+- The allow-list is not only the baked value. At run time it also includes the hosts the platform
+  reports this deployment answers on (`VERCEL_URL`, `VERCEL_BRANCH_URL`,
+  `VERCEL_PROJECT_PRODUCTION_URL`), each as `https://`. These come from the platform, not from a
+  request, and each is a host this deployment already serves, so a cross-site page still cannot
+  make a browser send one of them. A malformed value is ignored rather than fatal. On a host that
+  sets none of them, `NEXT_PUBLIC_SITE_URL` is the entire list.
+- The rejection log names both sides. `origin.rejected` carries the `Origin` that arrived and the
+  allow-list it was compared against. Neither is a secret — one is a header anyone can set, the
+  other the public site URL — and without them the log only says two values differed.
+
+After changing the variable, redeploy with the build cache **off**; a cached bundle keeps the old
+value.
 
 `.env.example` is the template. `.env*` files are gitignored. No secret is committed.
 

@@ -28,6 +28,7 @@ import { hashPassword, verifyPassword } from '@/server/auth/passwords';
 import { resetStore } from '@/server/store';
 import { __testing, logger } from '@/server/observability/logger';
 import { cookieName } from '@/server/security/cookies';
+import { env, resetEnvCache } from '@/config/env';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -169,6 +170,68 @@ describe('origin validation (CSRF layer 2)', () => {
   it('is not fooled by an origin that merely starts with ours', () => {
     expect(checkOrigin(request({ origin: `${ORIGIN}.evil.example` })).ok).toBe(false);
     expect(checkOrigin(request({ origin: 'http://localhost:3000.evil.example' })).ok).toBe(false);
+  });
+});
+
+/**
+ * The allow-list has to survive `NEXT_PUBLIC_SITE_URL` being a build-time
+ * constant: the same artefact is also served from per-deployment hosts the
+ * build could not have known. Those hosts come from the platform at run time.
+ */
+describe('origin allow-list on a platform deployment', () => {
+  const saved = {
+    VERCEL_URL: process.env.VERCEL_URL,
+    VERCEL_BRANCH_URL: process.env.VERCEL_BRANCH_URL,
+    VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  };
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    resetEnvCache();
+  });
+
+  it('accepts the hosts the platform says this deployment answers on', () => {
+    process.env.VERCEL_URL = 'owner-store-9f3a1.vercel.app';
+    process.env.VERCEL_BRANCH_URL = 'owner-store-git-main.vercel.app';
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'ownerstore.com.ar';
+    resetEnvCache();
+
+    expect(env().allowedOrigins).toContain('https://owner-store-9f3a1.vercel.app');
+    expect(env().allowedOrigins).toContain('https://owner-store-git-main.vercel.app');
+    expect(env().allowedOrigins).toContain('https://ownerstore.com.ar');
+    // The baked value stays in the list; the platform adds, never replaces.
+    expect(env().allowedOrigins).toContain(ORIGIN);
+
+    expect(checkOrigin(request({ origin: 'https://owner-store-9f3a1.vercel.app' })).ok).toBe(true);
+    expect(checkOrigin(request({ origin: 'https://evil.example' })).ok).toBe(false);
+  });
+
+  it('never trusts http for a platform host, nor a lookalike suffix', () => {
+    process.env.VERCEL_URL = 'owner-store-9f3a1.vercel.app';
+    resetEnvCache();
+
+    expect(checkOrigin(request({ origin: 'http://owner-store-9f3a1.vercel.app' })).ok).toBe(false);
+    expect(
+      checkOrigin(request({ origin: 'https://owner-store-9f3a1.vercel.app.evil.example' })).ok,
+    ).toBe(false);
+  });
+
+  it('ignores a malformed platform value instead of taking the site down', () => {
+    process.env.VERCEL_URL = 'not a host';
+    resetEnvCache();
+
+    expect(() => env().allowedOrigins).not.toThrow();
+    expect(env().allowedOrigins).toEqual([ORIGIN]);
+  });
+
+  it('adds nothing when the app is not on such a platform', () => {
+    for (const key of Object.keys(saved)) delete process.env[key];
+    resetEnvCache();
+
+    expect(env().allowedOrigins).toEqual([ORIGIN]);
   });
 });
 

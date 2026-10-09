@@ -174,7 +174,14 @@ arriving from Instagram — have inconsistent `SameSite` support.
 Controls, layered:
 1. **`SameSite=Lax`** on the session cookie.
 2. **Origin/Referer validation** on every state-changing request, against an explicit allow-list.
-   A missing or foreign `Origin` on a mutation is **403**.
+   A missing or foreign `Origin` on a mutation is **403**. The allow-list is the origin of
+   `NEXT_PUBLIC_SITE_URL` — which the bundler **inlines at build time**, so it names only the host
+   known when the artefact was compiled — plus, at run time, the hosts the platform reports this
+   deployment answers on (`VERCEL_URL`, `VERCEL_BRANCH_URL`, `VERCEL_PROJECT_PRODUCTION_URL`), each
+   over `https`. Those are supplied by the host rather than by a request, and each is already a host
+   this deployment serves, so they add no attacker capability — while without them the same artefact
+   served from a preview URL would reject every mutation and look like an authorisation bug.
+   SECURITY.md has the operator-facing version.
 3. **All mutations are `POST`/`PATCH`/`DELETE` with `Content-Type: application/json`**, which a
    simple cross-origin HTML form cannot produce — a cross-origin `fetch` with that content type is
    a preflighted request, and our CORS policy denies the preflight.
@@ -186,7 +193,7 @@ Controls, layered:
 
 Default is **no CORS headers at all** — the storefront is same-origin, and silence is the strictest
 policy. `Access-Control-Allow-Origin: *` is never emitted for a credentialed route. If a route ever
-needs cross-origin access it must opt in with an explicit origin from `ALLOWED_ORIGINS`;
+needs cross-origin access it must opt in with an explicit origin from that same allow-list;
 `credentials: true` with a reflected origin is forbidden.
 
 ### 4.11 Supply chain

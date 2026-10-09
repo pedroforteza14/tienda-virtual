@@ -51,7 +51,12 @@ const schema = z.object({
 });
 
 type Env = z.infer<typeof schema> & {
-  /** Origins allowed to make state-changing requests. See docs/threat-model.md §4.9. */
+  /**
+   * Origins allowed to make state-changing requests. See docs/threat-model.md §4.9.
+   *
+   * The origin of `SITE_URL` — a build-time constant — plus any host the
+   * platform says this deployment is served from. See `platformOrigins`.
+   */
   allowedOrigins: readonly string[];
   isProduction: boolean;
   isTest: boolean;
@@ -181,8 +186,45 @@ function load(): Env {
     isProduction,
     isTest: env.NODE_ENV === 'test',
     isSecureOrigin: env.SITE_URL.startsWith('https://'),
-    allowedOrigins: Object.freeze([new URL(env.SITE_URL).origin]),
+    allowedOrigins: Object.freeze([new URL(env.SITE_URL).origin, ...platformOrigins()]),
   };
+}
+
+/**
+ * Origins this deployment is also served from, according to the host.
+ *
+ * `NEXT_PUBLIC_SITE_URL` is inlined by the bundler at **build** time, so it can
+ * only ever name one host — the one known when the artefact was compiled. On
+ * Vercel every push also publishes the same artefact at a per-deployment URL,
+ * and with only the baked value in the allow-list every mutation on a preview
+ * is refused with 403 while the pages themselves render perfectly. That reads
+ * like a permissions bug and is a build-time/run-time mismatch.
+ *
+ * These names are set by the platform at run time, not sent by the client, and
+ * each is a host this very deployment answers on — so trusting them as origins
+ * for our own forms adds no attacker capability: a cross-site page still cannot
+ * make a browser claim one of them.
+ */
+function platformOrigins(): string[] {
+  const hosts = [
+    process.env.VERCEL_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  ];
+
+  const origins = new Set<string>();
+  for (const host of hosts) {
+    if (!host) continue;
+    try {
+      // The platform supplies a bare host (`my-app-abc123.vercel.app`), always
+      // served over https. Parsing rejects anything that is not one.
+      origins.add(new URL(`https://${host}`).origin);
+    } catch {
+      // A malformed value is ignored rather than fatal: it would take the whole
+      // site down over something no operator typed.
+    }
+  }
+  return [...origins];
 }
 
 /** localhost, 127.0.0.0/8 or [::1] — origins browsers already treat as secure. */
