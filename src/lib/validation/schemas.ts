@@ -79,16 +79,60 @@ export const EmailSchema = z
   .email('Revisá el formato del email');
 
 /**
- * Argentine phone. Accepts how people actually type it, then normalises to
- * digits so storage and the WhatsApp link have one canonical form.
+ * Argentine phone, normalised to the ten digits that can actually be dialled.
+ *
+ * The field used to ask for the number "sin el 0 ni el 15", and plenty of
+ * people typed it with both anyway — that is what their own phone shows them.
+ * Accepting the digits as typed stored numbers nobody could call, which for a
+ * shop whose whole support channel is WhatsApp is a lost sale rather than a
+ * validation nicety. The prefixes are stripped here instead of being refused,
+ * and the hint no longer states a rule the customer does not have to follow:
+ *
+ *   `011 15 4567-8900` · `+54 9 11 4567 8900` · `11 4567-8900` → `1145678900`
+ *
+ * An Argentine national number is always exactly ten digits (2–4 of área code
+ * plus the rest), which is what makes the stripping safe to do: every rule below
+ * only fires on a length that is already wrong without it, and the final check
+ * is exact rather than a range. The old one accepted 8 to 15 digits, which is
+ * how `01145678900` — eleven digits, uncallable — passed.
  */
+function toNationalDigits(value: string): string {
+  let digits = value.replace(/[\s()+.\-/]/g, '');
+
+  // International prefix, then the country code, then the mobile `9`: a number
+  // copied out of a contact card arrives as `+54 9 11 ...`.
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.startsWith('54') && digits.length > 10) digits = digits.slice(2);
+  if (digits.startsWith('9') && digits.length === 11) digits = digits.slice(1);
+
+  // Long-distance `0`, as it is printed on every bill.
+  if (digits.startsWith('0')) digits = digits.slice(1);
+
+  // The mobile `15`, which sits after the área code — 2, 3 or 4 digits in. It
+  // is only ever removed from a twelve-digit number, because that is exactly
+  // ten digits plus this prefix; a correct number never reaches this branch.
+  if (digits.length === 12) {
+    for (const at of [2, 3, 4]) {
+      if (digits.slice(at, at + 2) === '15') {
+        digits = digits.slice(0, at) + digits.slice(at + 2);
+        break;
+      }
+    }
+  }
+
+  return digits;
+}
+
 export const PhoneSchema = z
   .string()
   .trim()
   .min(8, 'Ingresá tu teléfono')
   .max(25)
-  .transform((value) => value.replace(/[\s()+.-]/g, ''))
-  .refine((digits) => /^\d{8,15}$/.test(digits), 'Ingresá un teléfono válido, con característica');
+  .transform(toNationalDigits)
+  .refine(
+    (digits) => /^\d{10}$/.test(digits),
+    'Ingresá los 10 dígitos con la característica. Por ejemplo: 11 4567-8900.',
+  );
 
 /** CPA (`C1425DKE`) or the legacy 4-digit code. */
 export const PostalCodeSchema = z

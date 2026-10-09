@@ -269,7 +269,7 @@ export function CheckoutFlow({ shippingOptions }: { shippingOptions: ShippingOpt
               autoComplete="tel"
               inputMode="tel"
               required
-              hint="Con característica, sin el 0 ni el 15."
+              hint="Con característica. Por ejemplo: 11 4567-8900."
               value={customer.phone}
               error={errors.phone}
               onChange={(event) => setCustomer({ ...customer, phone: event.target.value })}

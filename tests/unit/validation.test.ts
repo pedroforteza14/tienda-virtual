@@ -127,17 +127,53 @@ describe('free text — no angle brackets anywhere', () => {
 });
 
 describe('phone and postal code normalisation', () => {
+  /**
+   * Every one of these is the same phone. The field asks for it without the 0
+   * and the 15; people type what their own phone shows them, and a number that
+   * keeps either prefix cannot be dialled — which, for a shop that answers on
+   * WhatsApp, is a lost customer rather than a lint error.
+   */
   it('normalises how people actually type a phone number', () => {
-    for (const input of ['+54 11 4567-8900', '(011) 4567 8900', '11-4567-8900']) {
+    for (const input of [
+      '11 4567-8900',
+      '011 4567-8900',
+      '(011) 4567 8900',
+      '011 15 4567-8900',
+      '+54 11 4567-8900',
+      '+54 9 11 4567 8900',
+      '0054 9 11 4567 8900',
+      '+54-9-11-4567-8900',
+    ]) {
       const result = PhoneSchema.safeParse(input);
       expect(result.success, input).toBe(true);
-      if (result.success) expect(/^\d+$/.test(result.data)).toBe(true);
+      if (result.success) expect(result.data, input).toBe('1145678900');
     }
   });
 
-  it('rejects a phone that is not digits once normalised', () => {
-    for (const input of ['abcdefgh', '11-456', '+54 11 4567-8900x1234567890']) {
+  it('normalises a three-digit área code too, where the 15 sits one place later', () => {
+    // Córdoba: 351 15 123-4567.
+    expect(PhoneSchema.parse('0351 15 123-4567')).toBe('3511234567');
+    expect(PhoneSchema.parse('+54 9 351 123 4567')).toBe('3511234567');
+  });
+
+  it('rejects a number that could not be dialled, however it was typed', () => {
+    for (const input of [
+      'abcdefgh',
+      '11-456',
+      '+54 11 4567-8900x1234567890',
+      '4567-8900', // no área code: eight digits
+      '11 4567-89001', // one digit too many
+    ]) {
       expect(PhoneSchema.safeParse(input).success, input).toBe(false);
+    }
+  });
+
+  it('tells the customer what to type instead of just refusing', () => {
+    const result = PhoneSchema.safeParse('4567-8900');
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toContain('característica');
+      expect(result.error.issues[0]?.message).toMatch(/\d{2} \d{4}-\d{4}/);
     }
   });
 
