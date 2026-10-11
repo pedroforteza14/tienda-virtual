@@ -490,8 +490,9 @@ function pintarSelPost(){
   const o0 = document.createElement("option"); o0.value=""; o0.textContent="— elegí una pieza —"; sel.append(o0);
   ps.forEach((p,i)=>{
     const o = document.createElement("option"); o.value = p.id;
-    o.textContent = (i+1)+". @"+esc(p.handle)+" · "+num(p.comentarios)+" com · "
-      + (esc(p.tema)||esc(p.caption).slice(0,40)||"sin tema");
+    const tieneGuion = S.guiones.some(g=>g.postId===p.id);
+    o.textContent = (i+1)+". "+(tieneGuion?"✓ ":"")+(esc(p.tema)||esc(p.caption).slice(0,40)||"sin tema")
+      + " · @"+esc(p.handle)+(tieneGuion?" · guión listo":"");
     sel.append(o);
   });
   if(ps.some(p=>p.id===S.postSel)) sel.value = S.postSel; else S.postSel = "";
@@ -811,6 +812,9 @@ TABS.forEach(t=>$("#t-"+t).addEventListener("click", ()=>irA(t)));
 
 $("#selSemana").addEventListener("change", e=>{
   S.semana = e.target.value; pintarTablero(); pintarSelPost();
+});
+$("#selPost").addEventListener("change", e=>{
+  S.postSel = e.target.value; pintarGuiones();
 });
 $("#btnPieza").addEventListener("click", guardarPieza);
 $("#btnJson").addEventListener("click", importarJson);
