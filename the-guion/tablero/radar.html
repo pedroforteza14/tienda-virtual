@@ -1,14 +1,12 @@
 <title>THE GUION Radar</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Mesa de control semanal: cabecera fija con selector de semana, tiles de resumen,
-   ranking por comentarios, y banco de trabajo de guiones en dos columnas. */
+/* Una sola columna de fichas, ordenadas por comentarios. Cada ficha: link, comentarios, guion. */
 :root{
   --bg:#EFF2F5; --panel:#FFFFFF; --panel-2:#F7F9FB;
   --fg:#141A22; --muted:#5A6675; --line:#D5DBE3;
   --accent:#1B4FD8; --accent-soft:#E4EAFB;
   --hot:#D9503F; --hot-soft:#FBE7E4;
-  --ok:#0E7A5F; --warn:#9A6208; --bad:#B23A2C;
   --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
   --display:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -18,7 +16,6 @@
   --fg:#E7ECF2; --muted:#8D9AAB; --line:#28323E;
   --accent:#7297FF; --accent-soft:#1D2740;
   --hot:#FF8A79; --hot-soft:#3A2220;
-  --ok:#49B894; --warn:#D9A14B; --bad:#F08375;
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
@@ -26,861 +23,371 @@
   --fg:#E7ECF2; --muted:#8D9AAB; --line:#28323E;
   --accent:#7297FF; --accent-soft:#1D2740;
   --hot:#FF8A79; --hot-soft:#3A2220;
-  --ok:#49B894; --warn:#D9A14B; --bad:#F08375;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
-.wrap{max-width:1140px;margin:0 auto;padding-inline:16px;padding-block:0 56px}
+.wrap{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:0 56px}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
-a{color:var(--accent)}
 button{font:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-/* ---------- cabecera ---------- */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);
-  border-bottom:1px solid var(--line);padding-block:12px 0}
-.top-row{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between}
-.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
-.brand b{font-family:var(--display);font-weight:800;font-size:1.3rem;letter-spacing:-.02em}
-.brand span{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
-.wk{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.78rem}
+  border-bottom:1px solid var(--line);padding-block:13px;display:flex;flex-wrap:wrap;
+  gap:10px;align-items:baseline;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:9px;min-width:0}
+.brand b{font-family:var(--display);font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+.brand span{font-family:var(--mono);font-size:.67rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
 select,input,textarea{font:inherit;background:var(--panel);color:var(--fg);
-  border:1px solid var(--line);border-radius:7px;padding:7px 9px;max-width:100%}
-textarea{font-size:.92rem;line-height:1.55;resize:vertical;width:100%}
-.tabs{display:flex;gap:2px;overflow-x:auto;margin-top:12px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);
-  padding:9px 12px;font-weight:500;white-space:nowrap;font-size:.92rem}
-.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+  border:1px solid var(--line);border-radius:7px;padding:8px 10px;max-width:100%}
+textarea{font-family:var(--mono);font-size:.85rem;line-height:1.6;resize:vertical;width:100%}
+.wkrow{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.76rem;color:var(--muted)}
 
-/* ---------- bloques ---------- */
-section[role=tabpanel]{padding-top:22px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
-.stack{display:flex;flex-direction:column;gap:16px}
-.eyebrow{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}
-.lead{color:var(--muted);font-size:.93rem;max-width:62ch}
-
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
-.tile .k{font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-.tile .v{font-family:var(--display);font-weight:700;font-size:1.85rem;line-height:1.1;margin-top:6px;
-  font-variant-numeric:tabular-nums}
-.tile .s{font-size:.8rem;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
-
-.tabla-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
-table{border-collapse:collapse;width:100%;min-width:680px}
-th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;
-  color:var(--muted);font-weight:500;background:var(--panel-2);position:sticky;top:0}
-tbody tr:last-child td{border-bottom:0}
-td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
-.rank{font-family:var(--display);font-weight:700;color:var(--muted)}
-tr.top1 .rank{color:var(--hot)}
-.bar{height:5px;border-radius:3px;background:var(--accent);min-width:3px;margin-top:5px}
-tr.top1 .bar{background:var(--hot)}
-.cuenta{font-family:var(--mono);font-size:.82rem}
-.chip{display:inline-block;font-family:var(--mono);font-size:.66rem;text-transform:uppercase;
-  letter-spacing:.08em;padding:3px 7px;border-radius:999px;background:var(--panel-2);
-  border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.chip.hot{background:var(--hot-soft);border-color:transparent;color:var(--hot)}
-.chip.acc{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
-.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 15px;font-weight:600}
+/* ---- ficha ---- */
+.fichas{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+.ficha{background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.ficha.lider{border-color:var(--hot)}
+.cab{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.izq{display:flex;align-items:center;gap:13px;min-width:0;flex:1 1 auto}
+.puesto{font-family:var(--display);font-weight:700;font-size:1.1rem;color:var(--muted);
+  width:26px;flex:0 0 auto;text-align:center}
+.ficha.lider .puesto{color:var(--hot)}
+.coment{flex:0 0 auto;text-align:center;min-width:76px}
+.coment b{display:block;font-family:var(--display);font-weight:700;font-size:1.6rem;
+  line-height:1.05;font-variant-numeric:tabular-nums}
+.coment i{display:block;font-family:var(--mono);font-size:.6rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);font-style:normal;margin-top:2px}
+.coment.vacio b{color:var(--muted);font-size:1.2rem}
+.quien{min-width:0}
+.quien .gancho{font-weight:500;overflow-wrap:anywhere}
+.quien .cuenta{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-top:2px}
+.acc{display:flex;gap:7px;flex-wrap:wrap;flex:0 0 auto}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-weight:600;
+  text-decoration:none;display:inline-block}
 .btn.sec{background:var(--panel);color:var(--fg);border:1px solid var(--line)}
-.btn.sm{padding:5px 10px;font-size:.82rem;font-weight:500}
+.btn.sm{padding:5px 11px;font-size:.81rem;font-weight:500}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.row{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));gap:16px}
-.field{display:flex;flex-direction:column;gap:5px;min-width:0}
-.field label{font-size:.82rem;font-weight:500}
-.field .hint{font-size:.76rem;color:var(--muted)}
-.vacio{border:1px dashed var(--line);border-radius:12px;padding:26px 18px;text-align:center;color:var(--muted)}
-.vacio b{display:block;color:var(--fg);font-family:var(--display);font-size:1.05rem;margin-bottom:5px}
-.aviso{border-left:3px solid var(--warn);background:var(--panel);padding:11px 14px;
-  border-radius:0 8px 8px 0;font-size:.88rem}
-.guion{font-family:var(--mono);font-size:.84rem;line-height:1.62;white-space:pre-wrap;
-  background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:14px;
-  min-height:120px;overflow-wrap:anywhere}
-mark{background:var(--hot-soft);color:var(--hot);border-radius:3px;padding:0 2px}
-.medidor{display:flex;align-items:baseline;gap:8px}
-.medidor .n{font-family:var(--display);font-weight:700;font-size:1.5rem;font-variant-numeric:tabular-nums}
-.pista{height:7px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line);overflow:hidden}
-.pista i{display:block;height:100%;background:var(--ok)}
-.pista.riesgo i{background:var(--hot)}
-.lista{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
-.lista li{display:flex;gap:10px;align-items:center;justify-content:space-between;
-  background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
-.reglas{counter-reset:r;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
-.reglas li{counter-increment:r;display:grid;grid-template-columns:26px 1fr;gap:10px;font-size:.9rem}
-.reglas li::before{content:counter(r);font-family:var(--mono);font-size:.76rem;color:var(--accent);
-  border:1px solid var(--line);border-radius:6px;height:23px;display:grid;place-items:center}
+.cuerpo{padding:14px 16px}
+.rot{font-family:var(--mono);font-size:.63rem;text-transform:uppercase;letter-spacing:.13em;
+  color:var(--muted);margin-bottom:7px}
+.guion{font-family:var(--mono);font-size:.84rem;line-height:1.65;white-space:pre-wrap;
+  overflow-wrap:anywhere;margin:0}
+.singuion{color:var(--muted);font-size:.89rem}
+.pie{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.nota{font-size:.78rem;color:var(--muted)}
+
+/* ---- vacio y carga ---- */
+.vacio{border:1px dashed var(--line);border-radius:13px;padding:28px 18px;text-align:center;color:var(--muted);margin-top:22px}
+.vacio b{display:block;color:var(--fg);font-family:var(--display);font-size:1.08rem;margin-bottom:6px}
+.alta{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;margin-top:26px}
+.alta h2{font-size:1.02rem;margin-bottom:4px}
+.campos{display:grid;grid-template-columns:1fr;gap:10px;margin-top:13px}
+@media (min-width:620px){.campos{grid-template-columns:1fr 130px 180px auto;align-items:end}}
+.campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+.campo label{font-size:.79rem;font-weight:500}
+.msg{font-size:.81rem;color:var(--muted);margin-top:9px;min-height:1.2em}
 </style>
 
 <div class="wrap">
   <header class="top">
-    <div class="top-row">
-      <div class="brand">
-        <b>THE GUION</b><span>Radar semanal</span>
-      </div>
-      <div class="wk">
-        <label for="selSemana" style="color:var(--muted)">semana</label>
-        <select id="selSemana"><option value="">—</option></select>
-      </div>
+    <div class="brand"><b>THE GUION</b><span>Radar</span></div>
+    <div class="wkrow">
+      <label for="selSemana">semana</label>
+      <select id="selSemana"><option value="">—</option></select>
     </div>
-    <nav class="tabs" role="tablist" aria-label="Secciones">
-      <button role="tab" id="t-tablero" aria-selected="true" aria-controls="p-tablero">Tablero</button>
-      <button role="tab" id="t-guiones" aria-selected="false" aria-controls="p-guiones">Guiones</button>
-      <button role="tab" id="t-voz" aria-selected="false" aria-controls="p-voz">Mi voz</button>
-      <button role="tab" id="t-cuentas" aria-selected="false" aria-controls="p-cuentas">Cuentas</button>
-      <button role="tab" id="t-cargar" aria-selected="false" aria-controls="p-cargar">Cargar datos</button>
-    </nav>
   </header>
 
-  <!-- ============ TABLERO ============ -->
-  <section role="tabpanel" id="p-tablero" aria-labelledby="t-tablero" class="stack">
-    <div class="tiles" id="tiles"></div>
-    <div id="tableroCuerpo"></div>
-  </section>
+  <div id="lista"></div>
 
-  <!-- ============ GUIONES ============ -->
-  <section role="tabpanel" id="p-guiones" aria-labelledby="t-guiones" class="stack" hidden>
-    <div class="field" style="max-width:520px">
-      <label for="selPost">Pieza a reescribir</label>
-      <select id="selPost"><option value="">— elegí una pieza del ranking —</option></select>
-      <span class="hint">Se ordenan por comentarios de la semana elegida.</span>
-    </div>
-    <div id="guionCuerpo"></div>
-  </section>
-
-  <!-- ============ MI VOZ ============ -->
-  <section role="tabpanel" id="p-voz" aria-labelledby="t-voz" class="stack" hidden>
-    <div>
-      <p class="eyebrow">Perfil de voz</p>
-      <h2>Cómo hablás vos</h2>
-      <p class="lead">Esto es lo que usa el reescritor para que el guión suene a THE GUION y no a
-        la cuenta de la que salió la idea. Se guarda solo al salir de cada campo.</p>
-    </div>
-    <div class="card grid2" id="formVoz"></div>
-    <div class="card">
-      <p class="eyebrow">Reglas anti-clon</p>
-      <h3 style="margin:4px 0 12px">Qué se conserva y qué cambia siempre</h3>
-      <ol class="reglas" id="listaReglas"></ol>
-    </div>
-  </section>
-
-  <!-- ============ CUENTAS ============ -->
-  <section role="tabpanel" id="p-cuentas" aria-labelledby="t-cuentas" class="stack" hidden>
-    <div>
-      <p class="eyebrow">Cuentas seguidas</p>
-      <h2>A quién mira el radar</h2>
-      <p class="lead">El recolector consulta estas cuentas cada semana. Tienen que ser cuentas
-        públicas de tipo Empresa o Creador: una cuenta personal o privada no devuelve datos.</p>
-    </div>
-    <div class="card stack">
-      <ul class="lista" id="listaCuentas"></ul>
-      <div class="row">
-        <input id="nuevoHandle" placeholder="handle sin @" style="flex:1 1 180px">
-        <input id="nuevoNombre" placeholder="nombre (opcional)" style="flex:1 1 180px">
-        <button class="btn" id="btnAddCuenta">Agregar</button>
+  <section class="alta">
+    <h2>Agregar un video</h2>
+    <p class="nota">Pegá el link del reel y la cantidad de comentarios que tiene en Instagram.
+      Después pedime el guión en el chat y aparece acá.</p>
+    <div class="campos">
+      <div class="campo">
+        <label for="fUrl">Link del reel</label>
+        <input id="fUrl" type="url" placeholder="https://www.instagram.com/reel/...">
+      </div>
+      <div class="campo">
+        <label for="fCom">Comentarios</label>
+        <input id="fCom" type="number" min="0" placeholder="340">
+      </div>
+      <div class="campo">
+        <label for="fCuenta">Cuenta</label>
+        <input id="fCuenta" list="cuentasConocidas" placeholder="handle sin @">
+        <datalist id="cuentasConocidas">
+          <option value="nico.donovann"></option>
+          <option value="bruno.dbenedetto"></option>
+        </datalist>
+      </div>
+      <div class="campo">
+        <label for="btnAlta" style="visibility:hidden">Acción</label>
+        <button class="btn" id="btnAlta">Agregar</button>
       </div>
     </div>
-  </section>
-
-  <!-- ============ CARGAR ============ -->
-  <section role="tabpanel" id="p-cargar" aria-labelledby="t-cargar" class="stack" hidden>
-    <div>
-      <p class="eyebrow">Entrada de datos</p>
-      <h2>Cargar la semana</h2>
-      <p class="lead">Dos caminos: pegás la salida del recolector, o cargás una pieza a mano
-        cuando viste algo que vale la pena y no esperás al lunes.</p>
-    </div>
-
-    <div class="card stack">
-      <h3>Pegar la salida del recolector</h3>
-      <p class="hint">Un array JSON. Campos: <span class="cuenta">handle, url, fecha, comentarios,
-        likes, vistas, caption</span>. Los que falten quedan vacíos.</p>
-      <textarea id="jsonIn" rows="7" placeholder='[{"handle":"cuenta","url":"https://...","fecha":"2026-10-08","comentarios":412,"likes":9100,"vistas":210000,"caption":"..."}]'></textarea>
-      <div class="row">
-        <button class="btn" id="btnJson">Importar</button>
-        <span id="jsonMsg" class="hint"></span>
-      </div>
-    </div>
-
-    <div class="card stack">
-      <h3>Cargar una pieza a mano</h3>
-      <div class="grid2" id="formPieza"></div>
-      <div class="row">
-        <button class="btn" id="btnPieza">Guardar pieza</button>
-        <span id="piezaMsg" class="hint"></span>
-      </div>
-    </div>
+    <p class="msg" id="msgAlta"></p>
   </section>
 </div>
 
 <script>
-/* ===================== estado y utilidades ===================== */
-const S = {
-  db:null, sample:null, puedeEscribir:null,
-  posts:[], creadores:[], guiones:[], voz:{},
-  semana:"", postSel:"", cargando:true, ultimoTexto:""
-};
-
-const $  = (s,r=document)=>r.querySelector(s);
-const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+const S = { db:null, sample:null, posts:[], guiones:[], semana:"", cargando:true };
+const $ = s => document.querySelector(s);
 const num = n => (Number(n)||0).toLocaleString("es-AR");
 const esc = s => String(s??"");
-
-/* ISO 8601: la semana arranca el lunes y la semana 1 es la que contiene el primer jueves. */
-function isoSemana(fecha){
-  const d = new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()));
-  const dow = d.getUTCDay() || 7;            // lunes=1 ... domingo=7
-  d.setUTCDate(d.getUTCDate() + 4 - dow);    // al jueves de su semana
-  const anio = d.getUTCFullYear();
-  const ene1 = new Date(Date.UTC(anio,0,1));
-  const n = Math.ceil(((d - ene1)/86400000 + 1)/7);
-  return anio + "-W" + String(n).padStart(2,"0");
-}
-function semanaDe(iso){
-  if(!iso) return isoSemana(new Date());
-  const d = new Date(iso + "T00:00:00Z");
-  return isNaN(d) ? isoSemana(new Date()) : isoSemana(d);
-}
 const idCorto = () => Math.random().toString(36).slice(2,10);
 
-/* ===================== reglas anti-clon ===================== */
-const REGLAS = [
-  "Se conserva la estructura psicológica del gancho (qué tensión abre), nunca las palabras.",
-  "Cambia el vehículo: si el original va con un caso de cliente, va con un dato; si va con un dato, va con una objeción real que te dijeron.",
-  "Cambia el enemigo: mismo tema, otro culpable (la plataforma, el gurú de turno, el miedo del cliente, tu propio error del año pasado).",
-  "Todos los números y ejemplos se reemplazan por los tuyos. Si no tenés el dato, queda el hueco [DATO TUYO] y no se inventa nada.",
-  "Ninguna secuencia de 6 palabras puede coincidir con el original. El medidor de abajo lo verifica.",
-  "Cambia el formato de entrega: si era a cámara, va screencast; si era lista de 5, va una sola idea desarrollada.",
-  "El cierre es siempre tuyo, con tu CTA y tu forma de despedirte."
-];
-
-/* ===================== medidor de solapamiento ===================== */
-function palabras(t){
-  return String(t||"").toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g,"")
-    .replace(/[^a-z0-9ñ\s]/g," ")
-    .split(/\s+/).filter(Boolean);
-}
-function ngramas(ws,n){
-  const out = [];
-  for(let i=0;i+n<=ws.length;i++) out.push(ws.slice(i,i+n).join(" "));
-  return out;
-}
-/* Devuelve qué proporción de los 6-gramas del texto nuevo ya estaban en el original. */
-function solapamiento(original,nuevo,n=6){
-  const a = new Set(ngramas(palabras(original),n));
-  const b = ngramas(palabras(nuevo),n);
-  if(!b.length) return {pct:0, repetidos:[], total:0};
-  const repetidos = b.filter(g=>a.has(g));
-  return {pct: Math.round(repetidos.length/b.length*100), repetidos:[...new Set(repetidos)], total:b.length};
+function isoSemana(f){
+  const d = new Date(Date.UTC(f.getUTCFullYear(), f.getUTCMonth(), f.getUTCDate()));
+  const dow = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dow);
+  const a = d.getUTCFullYear();
+  const n = Math.ceil(((d - new Date(Date.UTC(a,0,1)))/86400000 + 1)/7);
+  return a + "-W" + String(n).padStart(2,"0");
 }
 
-/* ===================== cuestionario de voz ===================== */
-const CAMPOS_VOZ = [
-  {k:"presentacion", l:"Cómo te presentás al aire", t:"text", ph:"Soy Santi, hago pauta en Meta hace X años"},
-  {k:"tratamiento", l:"Tratamiento", t:"select", opts:["vos","tú","usted","mezclo"]},
-  {k:"audiencia", l:"A quién le hablás", t:"text", ph:"dueños de ecommerce que pautan solos y se funden"},
-  {k:"nivel", l:"Nivel técnico del contenido", t:"select",
-   opts:["arranco de cero","intermedio, asumo que ya pautó","avanzado, hablo en jerga"]},
-  {k:"energia", l:"Energía y ritmo", t:"select",
-   opts:["calmo y didáctico","directo y rápido","provocador, incomodo al que mira"]},
-  {k:"muletillas", l:"Frases y muletillas tuyas", t:"area",
-   ph:"una por línea: «te lo explico en 20 segundos», «esto no te lo cuenta nadie»"},
-  {k:"prohibidas", l:"Palabras que nunca dirías", t:"area",
-   ph:"una por línea: «hackear el algoritmo», «secreto», «viral»"},
-  {k:"apertura", l:"Cómo abrís un reel", t:"area", ph:"afirmación corta que contradice lo que todos creen, sin saludo"},
-  {k:"cierre", l:"Cómo cerrás / tu CTA", t:"area", ph:"«si querés el archivo, comentá PAUTA»"},
-  {k:"opinion", l:"Tu opinión fuerte repetida", t:"area", ph:"la tesis que defendés en todos los videos"},
-  {k:"duracion", l:"Duración objetivo (segundos)", t:"number", ph:"35"}
-];
-
-function pintarVoz(){
-  const c = $("#formVoz");
-  if(c.dataset.listo) { // sólo refrescar valores, no reconstruir mientras escribe
-    CAMPOS_VOZ.forEach(f=>{
-      const el = $("#voz-"+f.k);
-      if(el && document.activeElement !== el) el.value = esc(S.voz[f.k]);
-    });
-    return;
-  }
-  c.innerHTML = "";
-  CAMPOS_VOZ.forEach(f=>{
-    const d = document.createElement("div");
-    d.className = "field";
-    if(f.t==="area") d.style.gridColumn = "1 / -1";
-    const lab = document.createElement("label");
-    lab.htmlFor = "voz-"+f.k; lab.textContent = f.l;
-    d.append(lab);
-    let el;
-    if(f.t==="select"){
-      el = document.createElement("select");
-      f.opts.forEach(o=>{ const op=document.createElement("option"); op.value=o; op.textContent=o; el.append(op); });
-    } else if(f.t==="area"){
-      el = document.createElement("textarea"); el.rows = 3;
-    } else {
-      el = document.createElement("input"); el.type = f.t;
-    }
-    el.id = "voz-"+f.k;
-    if(f.ph) el.placeholder = f.ph;
-    el.value = esc(S.voz[f.k]);
-    el.addEventListener("change", ()=>guardarVoz(f.k, el.value));
-    d.append(el);
-    if(f.ph && f.t!=="select"){
-      const h=document.createElement("span"); h.className="hint"; h.textContent="ej.: "+f.ph; d.append(h);
-    }
-    c.append(d);
-  });
-  c.dataset.listo = "1";
+/* El handle no viene en un link de reel, pero sí en instagram.com/usuario/reel/... */
+const RESERVADAS = new Set(["p","reel","reels","tv","stories","explore","s"]);
+function cuentaDeUrl(u){
+  const m = String(u||"").match(/instagram\.com\/([^\/?#]+)/i);
+  if(!m) return "";
+  const seg = m[1].toLowerCase();
+  return RESERVADAS.has(seg) ? "" : m[1];
 }
 
-let timerVoz = null, pendienteVoz = {};
-function guardarVoz(k,v){
-  S.voz[k] = v; pendienteVoz[k] = v;
-  clearTimeout(timerVoz);
-  timerVoz = setTimeout(async ()=>{
-    const cambios = pendienteVoz; pendienteVoz = {};
-    if(!S.db) return;
-    try{ await S.db.doc("config/voz").set({...S.voz, actualizado:new Date().toISOString()}); }
-    catch(e){ console.warn("no se pudo guardar la voz", e); Object.assign(pendienteVoz, cambios); }
-  }, 700);
+/* Primera línea útil del guión: sirve para reconocer la ficha de un vistazo. */
+function ganchoDe(texto){
+  const t = String(texto||"");
+  const m = t.match(/GANCHO[^\n]*\n([^\n]+)/);
+  if(m) return m[1].trim();
+  const l = t.split("\n").map(x=>x.trim()).filter(Boolean);
+  return l[0] || "";
 }
 
-function vozEnTexto(){
-  const v = S.voz, L = [];
-  const add = (et,val)=>{ if(val && String(val).trim()) L.push(et+": "+String(val).trim()); };
-  add("Se presenta así", v.presentacion);
-  add("Tratamiento", v.tratamiento);
-  add("Le habla a", v.audiencia);
-  add("Nivel técnico", v.nivel);
-  add("Energía", v.energia);
-  add("Frases propias", v.muletillas);
-  add("Palabras prohibidas (nunca usarlas)", v.prohibidas);
-  add("Cómo abre", v.apertura);
-  add("Cómo cierra", v.cierre);
-  add("Opinión fuerte que repite", v.opinion);
-  add("Duración objetivo en segundos", v.duracion);
-  return L.length ? L.join("\n") : "(sin definir todavía)";
-}
+const guionDe = id => S.guiones.find(g=>g.postId===id);
+const delaSemana = () => S.posts.filter(p=>p.semana===S.semana)
+  .sort((a,b)=>(Number(b.comentarios)||0)-(Number(a.comentarios)||0));
 
-/* ===================== tablero ===================== */
-function semanas(){
-  const set = new Set(S.posts.map(p=>p.semana).filter(Boolean));
-  return [...set].sort().reverse();
-}
-function postsSemana(){
-  return S.posts.filter(p=>p.semana===S.semana)
-    .sort((a,b)=>(Number(b.comentarios)||0)-(Number(a.comentarios)||0));
-}
-
-function pintarSelSemana(){
-  const sel = $("#selSemana"), ws = semanas();
+function pintarSemanas(){
+  const sel = $("#selSemana");
+  const ws = [...new Set(S.posts.map(p=>p.semana).filter(Boolean))].sort().reverse();
   const prev = S.semana;
   sel.innerHTML = "";
   if(!ws.length){
-    const o=document.createElement("option"); o.value=""; o.textContent="sin datos"; sel.append(o);
-    S.semana=""; return;
+    sel.append(Object.assign(document.createElement("option"),{value:"",textContent:"sin datos"}));
+    S.semana = ""; return;
   }
-  ws.forEach(w=>{ const o=document.createElement("option"); o.value=w; o.textContent=w; sel.append(o); });
+  ws.forEach(w=>sel.append(Object.assign(document.createElement("option"),{value:w,textContent:w})));
   S.semana = ws.includes(prev) ? prev : ws[0];
   sel.value = S.semana;
 }
 
-function pintarTiles(){
-  const ps = postsSemana(), c = $("#tiles");
-  const totalCom = ps.reduce((a,p)=>a+(Number(p.comentarios)||0),0);
-  const top = ps[0];
-  const conVistas = ps.filter(p=>Number(p.vistas)>0);
-  const tasa = conVistas.length
-    ? (conVistas.reduce((a,p)=>a+(Number(p.comentarios)||0)/(Number(p.vistas)||1)*1000,0)/conVistas.length)
-    : 0;
-  const tiles = [
-    {k:"piezas analizadas", v:num(ps.length), s:S.semana||"—"},
-    {k:"comentarios juntados", v:num(totalCom), s:ps.length?("en "+ps.length+" piezas"):"cargá la primera"},
-    {k:"más comentada", v:top?num(top.comentarios):"—", s:top?("@"+esc(top.handle)):"—"},
-    {k:"comentarios por mil vistas", v:tasa?tasa.toFixed(1):"—",
-     s:conVistas.length?("promedio de "+conVistas.length+" piezas"):"falta cargar vistas"}
-  ];
-  c.innerHTML = "";
-  tiles.forEach(t=>{
-    const d = document.createElement("div"); d.className="tile";
-    const k=document.createElement("div"); k.className="k"; k.textContent=t.k;
-    const v=document.createElement("div"); v.className="v"; v.textContent=t.v;
-    const s=document.createElement("div"); s.className="s"; s.textContent=t.s;
-    d.append(k,v,s); c.append(d);
-  });
-}
-
-function pintarTablero(){
-  pintarTiles();
-  const cont = $("#tableroCuerpo"), ps = postsSemana();
+function pintar(){
+  pintarSemanas();
+  const cont = $("#lista");
   cont.innerHTML = "";
+  const ps = delaSemana();
 
   if(!ps.length){
-    const v = document.createElement("div"); v.className="vacio";
+    const v = document.createElement("div"); v.className = "vacio";
     const b = document.createElement("b");
-    b.textContent = S.cargando ? "Buscando la semana…" : "Todavía no hay piezas cargadas";
+    b.textContent = S.cargando ? "Cargando…" : "Todavía no hay videos cargados";
     const p = document.createElement("p");
-    p.textContent = S.cargando
-      ? "Un segundo."
-      : "Acá va el ranking de la semana por cantidad de comentarios: quién publicó qué, cuántos comentarios juntó y qué tema tocó. Para llenarlo, andá a «Cargar datos» y pegá la salida del recolector, o cargá una pieza a mano.";
+    p.textContent = S.cargando ? "Un segundo."
+      : "Agregá abajo el link de un reel y sus comentarios. Las fichas se ordenan solas, del más comentado al menos.";
     v.append(b,p); cont.append(v); return;
   }
 
-  const max = Number(ps[0].comentarios)||1;
-  const wrap = document.createElement("div"); wrap.className="tabla-wrap";
-  const t = document.createElement("table");
-  t.innerHTML = "<thead><tr><th>#</th><th>cuenta</th><th>tema / idea</th>"
-    + "<th>comentarios</th><th>likes</th><th>vistas</th><th>com/1k</th><th></th></tr></thead>";
-  const tb = document.createElement("tbody");
+  const fichas = document.createElement("div"); fichas.className = "fichas";
 
   ps.forEach((p,i)=>{
-    const tr = document.createElement("tr");
-    if(i===0) tr.className = "top1";
+    const g = guionDe(p.id);
+    const art = document.createElement("article");
+    art.className = "ficha" + (i===0 && Number(p.comentarios)>0 ? " lider" : "");
 
-    const td0 = document.createElement("td"); td0.className="rank"; td0.textContent = String(i+1);
-    const td1 = document.createElement("td");
-    const h = document.createElement("div"); h.className="cuenta"; h.textContent = "@"+esc(p.handle);
-    td1.append(h);
+    /* --- cabecera: puesto, comentarios, gancho, link --- */
+    const cab = document.createElement("div"); cab.className = "cab";
+    const izq = document.createElement("div"); izq.className = "izq";
+
+    const pu = document.createElement("div"); pu.className = "puesto"; pu.textContent = String(i+1);
+
+    const co = document.createElement("div");
+    const tiene = Number(p.comentarios) > 0;
+    co.className = "coment" + (tiene ? "" : " vacio");
+    const cb = document.createElement("b"); cb.textContent = tiene ? num(p.comentarios) : "—";
+    const ci = document.createElement("i"); ci.textContent = tiene ? "comentarios" : "sin cargar";
+    co.append(cb,ci);
+
+    const qu = document.createElement("div"); qu.className = "quien";
+    const ga = document.createElement("div"); ga.className = "gancho";
+    ga.textContent = g ? ganchoDe(g.texto) : (esc(p.tema) || "Sin guión todavía");
+    const cu = document.createElement("div"); cu.className = "cuenta"; cu.textContent = "@"+esc(p.handle);
+    qu.append(ga,cu);
+
+    izq.append(pu,co,qu);
+
+    const acc = document.createElement("div"); acc.className = "acc";
     if(p.url){
-      const a = document.createElement("a"); a.href = p.url; a.target="_blank"; a.rel="noopener";
-      a.className="hint"; a.textContent="ver en Instagram"; td1.append(document.createElement("br"), a);
+      const a = document.createElement("a");
+      a.className = "btn sec sm"; a.href = p.url; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = "Ver el video";
+      acc.append(a);
     }
-    const td2 = document.createElement("td");
-    const tema = document.createElement("div");
-    tema.textContent = esc(p.tema) || esc(p.caption).slice(0,110) || "—";
-    td2.append(tema);
-    if(p.formato){ const ch=document.createElement("span"); ch.className="chip"; ch.textContent=esc(p.formato); td2.append(ch); }
+    cab.append(izq,acc);
 
-    const tdC = document.createElement("td"); tdC.className="num";
-    tdC.textContent = num(p.comentarios);
-    const bar = document.createElement("div"); bar.className="bar";
-    bar.style.width = Math.max(3, Math.round((Number(p.comentarios)||0)/max*100)) + "%";
-    tdC.append(bar);
+    /* --- cuerpo: mi guión --- */
+    const cue = document.createElement("div"); cue.className = "cuerpo";
+    const rot = document.createElement("div"); rot.className = "rot"; rot.textContent = "Mi guión readaptado";
+    cue.append(rot);
 
-    const tdL = document.createElement("td"); tdL.className="num"; tdL.textContent = p.likes?num(p.likes):"—";
-    const tdV = document.createElement("td"); tdV.className="num"; tdV.textContent = p.vistas?num(p.vistas):"—";
-    const tdR = document.createElement("td"); tdR.className="num";
-    tdR.textContent = (Number(p.vistas)>0)
-      ? ((Number(p.comentarios)||0)/Number(p.vistas)*1000).toFixed(1) : "—";
+    const pre = document.createElement("pre"); pre.className = "guion";
+    const sin = document.createElement("p"); sin.className = "singuion";
+    if(g){ pre.textContent = g.texto; cue.append(pre); }
+    else {
+      sin.textContent = "Todavía no hay guión para este video. Pedímelo en el chat, o usá el botón de abajo.";
+      cue.append(sin);
+    }
 
-    const tdB = document.createElement("td");
-    const b = document.createElement("button"); b.className="btn sec sm"; b.textContent="Reescribir";
-    b.addEventListener("click", ()=>{ S.postSel = p.id; irA("guiones"); pintarGuiones(); });
-    tdB.append(b);
+    const pie = document.createElement("div"); pie.className = "pie";
+    const msg = document.createElement("span"); msg.className = "nota";
 
-    tr.append(td0,td1,td2,tdC,tdL,tdV,tdR,tdB);
-    tb.append(tr);
-  });
-  t.append(tb); wrap.append(t); cont.append(wrap);
-
-  const pie = document.createElement("p"); pie.className="hint"; pie.style.marginTop="10px";
-  pie.textContent = "Los números son los que cargaste: el radar no los estima ni los completa solo.";
-  cont.append(pie);
-}
-
-/* ===================== guiones ===================== */
-function pintarSelPost(){
-  const sel = $("#selPost"), ps = postsSemana();
-  sel.innerHTML = "";
-  const o0 = document.createElement("option"); o0.value=""; o0.textContent="— elegí una pieza —"; sel.append(o0);
-  ps.forEach((p,i)=>{
-    const o = document.createElement("option"); o.value = p.id;
-    const tieneGuion = S.guiones.some(g=>g.postId===p.id);
-    o.textContent = (i+1)+". "+(tieneGuion?"✓ ":"")+(esc(p.tema)||esc(p.caption).slice(0,40)||"sin tema")
-      + " · @"+esc(p.handle)+(tieneGuion?" · guión listo":"");
-    sel.append(o);
-  });
-  if(ps.some(p=>p.id===S.postSel)) sel.value = S.postSel; else S.postSel = "";
-}
-
-function pintarGuiones(){
-  pintarSelPost();
-  const cont = $("#guionCuerpo"); cont.innerHTML = "";
-  const p = S.posts.find(x=>x.id===S.postSel);
-
-  if(!p){
-    const v=document.createElement("div"); v.className="vacio";
-    const b=document.createElement("b"); b.textContent="Elegí una pieza del ranking";
-    const t=document.createElement("p");
-    t.textContent="Acá se arma tu versión: a la izquierda queda el material original tal como lo cargaste, a la derecha la reescritura en tu voz, con el medidor que verifica que no haya quedado igual.";
-    v.append(b,t); cont.append(v); return;
-  }
-
-  const original = [esc(p.hook), esc(p.transcripcion), esc(p.caption)].filter(Boolean).join("\n\n");
-
-  const g2 = document.createElement("div"); g2.className="grid2";
-
-  /* --- columna original --- */
-  const cA = document.createElement("div"); cA.className="card stack";
-  const e1 = document.createElement("p"); e1.className="eyebrow"; e1.textContent="Material original · @"+esc(p.handle);
-  const h1 = document.createElement("h3"); h1.textContent = esc(p.tema) || "Sin tema cargado";
-  const meta = document.createElement("div"); meta.className="row";
-  [["comentarios",num(p.comentarios)],["likes",p.likes?num(p.likes):"—"],["vistas",p.vistas?num(p.vistas):"—"]]
-    .forEach(([k,v])=>{ const c=document.createElement("span"); c.className="chip"; c.textContent=k+" "+v; meta.append(c); });
-  const pre = document.createElement("div"); pre.className="guion";
-  pre.textContent = original || "No cargaste el gancho ni la transcripción de esta pieza. Sin eso, la reescritura trabaja a ciegas: agregalos en «Cargar datos».";
-  cA.append(e1,h1,meta,pre);
-
-  /* --- columna versión propia --- */
-  const cB = document.createElement("div"); cB.className="card stack";
-  const e2 = document.createElement("p"); e2.className="eyebrow"; e2.textContent="Tu versión";
-  const h2 = document.createElement("h3"); h2.textContent="Guión THE GUION";
-  const fila = document.createElement("div"); fila.className="row";
-  const bRe = document.createElement("button"); bRe.className="btn"; bRe.textContent="Reescribir en mi voz";
-  const bStop = document.createElement("button"); bStop.className="btn sec sm"; bStop.textContent="Detener"; bStop.hidden=true;
-  const bSave = document.createElement("button"); bSave.className="btn sec sm"; bSave.textContent="Guardar guión";
-  const msg = document.createElement("span"); msg.className="hint";
-  fila.append(bRe,bStop,bSave,msg);
-
-  const salida = document.createElement("textarea");
-  salida.rows = 16; salida.className="guion"; salida.id="salidaGuion";
-  const guardado = S.guiones.find(g=>g.postId===p.id);
-  salida.value = guardado ? esc(guardado.texto) : "";
-  salida.placeholder = "Acá aparece tu guión. Podés editarlo antes de guardarlo: lo que quede escrito es lo que se guarda.";
-
-  /* medidor anti-clon */
-  const med = document.createElement("div"); med.className="stack"; med.style.gap="6px";
-  const medTop = document.createElement("div"); medTop.className="medidor";
-  const medN = document.createElement("span"); medN.className="n";
-  const medT = document.createElement("span"); medT.className="hint";
-  medTop.append(medN,medT);
-  const pista = document.createElement("div"); pista.className="pista";
-  const fill = document.createElement("i"); pista.append(fill);
-  const detalle = document.createElement("div"); detalle.className="hint";
-  med.append(medTop,pista,detalle);
-
-  function medir(){
-    const r = solapamiento(original, salida.value, 6);
-    medN.textContent = r.total ? r.pct+"%" : "—";
-    medT.textContent = r.total
-      ? "de las secuencias de 6 palabras ya estaban en el original"
-      : "escribí o generá el guión para medir";
-    fill.style.width = Math.min(100, r.pct*4) + "%";
-    pista.classList.toggle("riesgo", r.pct > 0);
-    if(!r.total){ detalle.textContent = ""; return; }
-    detalle.textContent = r.pct === 0
-      ? "Limpio: no repite ninguna secuencia de 6 palabras del original."
-      : "Repetido: " + r.repetidos.slice(0,4).map(x=>"«"+x+"»").join(", ")
-        + (r.repetidos.length>4 ? " y "+(r.repetidos.length-4)+" más." : "");
-  }
-  salida.addEventListener("input", medir);
-
-  cB.append(e2,h2,fila,salida,med);
-  g2.append(cA,cB);
-  cont.append(g2);
-
-  if(!S.sample){
-    bRe.disabled = true;
-    const av = document.createElement("div"); av.className="aviso";
-    av.textContent = "La reescritura automática no está disponible en esta vista. Podés escribir el guión a mano acá y el medidor anti-clon sigue funcionando.";
-    cont.append(av);
-  }
-
-  medir();
-
-  /* --- acción: reescribir --- */
-  let ctl = null;
-  bStop.addEventListener("click", ()=>ctl?.abort());
-  bRe.addEventListener("click", async ()=>{
-    if(!S.sample) return;
-    if(!original.trim()){ msg.textContent = "Falta el gancho o la transcripción de la pieza."; return; }
-    ctl = new AbortController();
-    bRe.disabled = true; bStop.hidden = false; msg.textContent = "Pensando…";
-    salida.value = "";
-    try{
-      const { truncated } = await S.sample(promptReescritura(p, original), {
-        signal: ctl.signal,
-        cache: false,
-        onText: ({text})=>{ salida.value = text; msg.textContent = ""; medir(); }
+    if(g){
+      const bc = document.createElement("button"); bc.className = "btn sm"; bc.textContent = "Copiar guión";
+      bc.addEventListener("click", async ()=>{
+        try{
+          await navigator.clipboard.writeText(g.texto);
+          msg.textContent = "Copiado.";
+        }catch{
+          const r = document.createRange(); r.selectNodeContents(pre);
+          const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          msg.textContent = "Seleccionado: copialo con el teclado.";
+        }
       });
-      medir();
-      msg.textContent = truncated ? "Quedó cortado: pedile menos o partilo en dos." : "Listo. Revisalo y guardalo.";
-    }catch(e){
-      if(e.code === "cancelled"){ salida.value = e.text || salida.value; msg.textContent = "Detenido."; }
-      else if(e.code === "not_granted" || e.code === "sampling_disabled"){
-        salida.value = ""; msg.textContent = "No autorizaste a este tablero a usar Claude.";
-        bRe.disabled = true;
-      }
-      else if(e.code === "rate_limited"){ msg.textContent = "Demasiados pedidos seguidos. Probá en un rato."; }
-      else if(e.code === "refused"){ salida.value = ""; msg.textContent = "Claude no respondió a este pedido. Cambiá el material de entrada."; }
-      else { salida.value = e.text || salida.value; msg.textContent = "Se cortó la conexión. Reintentá cuando quieras."; }
-      medir();
-    }finally{
-      bRe.disabled = !S.sample; bStop.hidden = true; ctl = null;
+      pie.append(bc);
     }
+
+    if(S.sample){
+      const br = document.createElement("button");
+      br.className = "btn sec sm"; br.textContent = g ? "Rehacer" : "Escribir guión";
+      br.addEventListener("click", ()=>reescribir(p, pre, sin, cue, br, msg));
+      pie.append(br);
+    }
+    pie.append(msg);
+    cue.append(pie);
+
+    art.append(cab,cue);
+    fichas.append(art);
   });
 
-  /* --- acción: guardar --- */
-  bSave.addEventListener("click", async ()=>{
-    if(!S.db){ msg.textContent = "Sin conexión al guardado."; return; }
-    if(!salida.value.trim()){ msg.textContent = "No hay nada para guardar."; return; }
-    bSave.disabled = true; msg.textContent = "Guardando…";
-    const r = solapamiento(original, salida.value, 6);
-    const id = guardado ? guardado.id : (p.id + "-" + idCorto());
-    try{
+  cont.append(fichas);
+}
+
+/* ---------- reescritura ---------- */
+function prompt_(p){
+  const base = [esc(p.hook), esc(p.transcripcion), esc(p.caption), esc(p.tema)].filter(Boolean).join("\n\n");
+  return [
+"Sos el guionista de THE GUION, cuenta de Instagram sobre Meta Ads en español rioplatense (voseo: usá \"vos\", \"tenés\", \"mirá\").",
+"Te paso una pieza ajena que funcionó y tenés que escribir un reel NUEVO para THE GUION, no una copia.",
+"",
+"PIEZA ORIGINAL (de @"+esc(p.handle)+(Number(p.comentarios)?", "+num(p.comentarios)+" comentarios":"")+")",
+base || "(solo se conoce la cuenta y el link; deducí el tema del nicho Meta Ads)",
+"",
+"REGLAS, OBLIGATORIAS",
+"1. Conservá la estructura psicológica del gancho, nunca las palabras.",
+"2. Cambiá el vehículo: si el original usa un caso, usá un dato; si usa un dato, usá una objeción real.",
+"3. Cambiá el enemigo: mismo tema, otro culpable.",
+"4. El ángulo de THE GUION es lo que se DICE en el anuncio, no cómo se configura la plataforma.",
+"5. Ninguna secuencia de 6 palabras puede coincidir con el original.",
+"6. No inventes resultados, cifras, casos ni clientes. Si falta un dato propio, escribí [ACÁ VA TU NÚMERO].",
+"7. El cierre pide un comentario con una palabra clave en mayúsculas.",
+"",
+"FORMATO DE SALIDA, solo texto plano con estos títulos:",
+"GANCHO (0-3s)","DESARROLLO (con los segundos entre corchetes)","CIERRE"
+  ].join("\n");
+}
+
+async function reescribir(p, pre, sin, cue, boton, msg){
+  if(!S.sample) return;
+  boton.disabled = true; msg.textContent = "Pensando…";
+  if(sin.isConnected) sin.replaceWith(pre);
+  pre.textContent = "";
+  try{
+    const { text } = await S.sample(prompt_(p), {
+      cache:false,
+      onText: ({text})=>{ pre.textContent = text; msg.textContent = ""; }
+    });
+    if(S.db){
+      const g = guionDe(p.id);
+      const id = g ? g.id : (p.id + "-" + idCorto());
       await S.db.doc("guiones/"+id).set({
-        postId: p.id, semana: p.semana, handle: p.handle,
-        texto: salida.value, solapamiento: r.pct,
-        actualizado: new Date().toISOString()
+        postId:p.id, semana:p.semana, handle:p.handle, texto:text,
+        actualizado:new Date().toISOString()
       });
       msg.textContent = "Guardado.";
-    }catch(e){
-      msg.textContent = (e.code === "invalid_argument")
-        ? "No tenés permiso de escritura en este tablero."
-        : "No se pudo guardar. Reintentá.";
-    }finally{ bSave.disabled = false; }
-  });
-}
-
-function promptReescritura(p, original){
-  return [
-"Sos el guionista de THE GUION, un proyecto de contenido sobre Meta Ads en español rioplatense.",
-"Te paso una pieza ajena que funcionó bien (midió muchos comentarios) y tenés que escribir un reel NUEVO para THE GUION que aproveche el aprendizaje sin ser una copia.",
-"",
-"=== PERFIL DE VOZ DE THE GUION ===",
-vozEnTexto(),
-"",
-"=== PIEZA ORIGINAL (de @"+esc(p.handle)+", "+num(p.comentarios)+" comentarios) ===",
-original.slice(0,6000),
-"",
-"=== REGLAS ANTI-CLON, OBLIGATORIAS ===",
-REGLAS.map((r,i)=>(i+1)+". "+r).join("\n"),
-"",
-"Reglas de honestidad: no inventes resultados, cifras, casos ni clientes. Donde haría falta un dato propio que no tenés, escribí literalmente [DATO TUYO] y seguí.",
-"",
-"=== FORMATO DE SALIDA, EXACTO ===",
-"Devolvé solo texto plano con estos cinco títulos en este orden y nada más:",
-"",
-"ÁNGULO NUEVO",
-"(una línea: qué cambiaste respecto del original y por qué ese ángulo es tuyo)",
-"",
-"GANCHO (0-3s)",
-"(una o dos frases para decir a cámara, sin saludo)",
-"",
-"DESARROLLO",
-"(el cuerpo del guión, marcando los segundos aproximados entre corchetes)",
-"",
-"CIERRE",
-"(el remate con el CTA propio del perfil de voz)",
-"",
-"QUÉ CAMBIÉ",
-"(tres viñetas con guion: estructura que conservé, vehículo que cambié, enemigo que cambié)"
-].join("\n");
-}
-
-/* ===================== cuentas ===================== */
-function pintarCuentas(){
-  const ul = $("#listaCuentas"); ul.innerHTML = "";
-  if(!S.creadores.length){
-    const li=document.createElement("li");
-    li.textContent = S.cargando ? "Cargando…" : "Todavía no hay cuentas. Agregá la primera abajo.";
-    ul.append(li); return;
-  }
-  S.creadores.slice().sort((a,b)=>String(a.handle).localeCompare(String(b.handle))).forEach(c=>{
-    const li = document.createElement("li");
-    const izq = document.createElement("div");
-    const h = document.createElement("div"); h.className="cuenta"; h.textContent = "@"+esc(c.handle);
-    izq.append(h);
-    if(c.nombre){ const n=document.createElement("div"); n.className="hint"; n.textContent=esc(c.nombre); izq.append(n); }
-    const der = document.createElement("div"); der.className="row";
-    const cuenta = S.posts.filter(p=>p.handle===c.handle).length;
-    const ch = document.createElement("span"); ch.className="chip"; ch.textContent = cuenta+" piezas";
-    const bx = document.createElement("button"); bx.className="btn sec sm"; bx.textContent="Quitar";
-    bx.addEventListener("click", async ()=>{
-      if(!S.db) return;
-      bx.disabled = true;
-      try{ await S.db.doc("creadores/"+c.id).delete(); }catch(e){ bx.disabled=false; }
-    });
-    der.append(ch,bx);
-    li.append(izq,der); ul.append(li);
-  });
-}
-
-/* ===================== carga de datos ===================== */
-const CAMPOS_PIEZA = [
-  {k:"handle", l:"Cuenta (handle sin @)", t:"text", req:true},
-  {k:"url", l:"Link del reel", t:"url"},
-  {k:"fecha", l:"Fecha de publicación", t:"date"},
-  {k:"comentarios", l:"Comentarios", t:"number", req:true},
-  {k:"likes", l:"Likes", t:"number"},
-  {k:"vistas", l:"Vistas", t:"number"},
-  {k:"tema", l:"Tema en una línea", t:"text"},
-  {k:"formato", l:"Formato", t:"select", opts:["","a cámara","screencast","texto en pantalla","carrusel","entrevista"]},
-  {k:"hook", l:"Gancho textual (primeros 3 segundos)", t:"area"},
-  {k:"transcripcion", l:"Transcripción o idea central", t:"area"}
-];
-
-function pintarFormPieza(){
-  const c = $("#formPieza");
-  if(c.dataset.listo) return;
-  c.innerHTML = "";
-  CAMPOS_PIEZA.forEach(f=>{
-    const d = document.createElement("div"); d.className="field";
-    if(f.t==="area") d.style.gridColumn = "1 / -1";
-    const lab = document.createElement("label"); lab.htmlFor="pz-"+f.k;
-    lab.textContent = f.l + (f.req ? " *" : "");
-    let el;
-    if(f.t==="select"){
-      el = document.createElement("select");
-      f.opts.forEach(o=>{ const op=document.createElement("option"); op.value=o; op.textContent=o||"—"; el.append(op); });
-    } else if(f.t==="area"){ el = document.createElement("textarea"); el.rows=3; }
-    else { el = document.createElement("input"); el.type=f.t; }
-    el.id = "pz-"+f.k;
-    d.append(lab,el); c.append(d);
-  });
-  c.dataset.listo = "1";
-}
-
-async function guardarPieza(){
-  const msg = $("#piezaMsg");
-  const v = k => { const el = $("#pz-"+k); return el ? el.value.trim() : ""; };
-  const handle = v("handle").replace(/^@/,"");
-  if(!handle){ msg.textContent = "Falta la cuenta."; return; }
-  if(!v("comentarios")){ msg.textContent = "Falta la cantidad de comentarios."; return; }
-  if(!S.db){ msg.textContent = "Sin conexión al guardado."; return; }
-  const fecha = v("fecha");
-  const doc = {
-    handle, url:v("url"), fecha, semana:semanaDe(fecha),
-    comentarios:Number(v("comentarios"))||0, likes:Number(v("likes"))||0, vistas:Number(v("vistas"))||0,
-    tema:v("tema"), formato:v("formato"), hook:v("hook"), transcripcion:v("transcripcion"),
-    caption:"", origen:"manual", cargado:new Date().toISOString()
-  };
-  $("#btnPieza").disabled = true; msg.textContent = "Guardando…";
-  try{
-    await S.db.doc("posts/"+idCorto()).set(doc);
-    msg.textContent = "Pieza guardada en la semana " + doc.semana + ".";
-    CAMPOS_PIEZA.forEach(f=>{ const el=$("#pz-"+f.k); if(el) el.value=""; });
+    } else {
+      msg.textContent = "Escrito, pero no se pudo guardar.";
+    }
   }catch(e){
-    msg.textContent = (e.code==="invalid_argument")
-      ? "No tenés permiso de escritura en este tablero." : "No se pudo guardar. Reintentá.";
-  }finally{ $("#btnPieza").disabled = false; }
+    if(e.code === "not_granted" || e.code === "sampling_disabled"){
+      msg.textContent = "No autorizaste a este tablero a usar Claude.";
+    } else if(e.code === "rate_limited"){
+      msg.textContent = "Demasiados pedidos seguidos. Probá en un rato.";
+    } else {
+      pre.textContent = e.text || "";
+      msg.textContent = "Se cortó. Reintentá cuando quieras.";
+    }
+  }finally{ boton.disabled = false; }
 }
 
-async function importarJson(){
-  const msg = $("#jsonMsg"), txt = $("#jsonIn").value.trim();
-  if(!txt){ msg.textContent = "Pegá el JSON primero."; return; }
+/* ---------- alta ---------- */
+$("#fUrl").addEventListener("change", ()=>{
+  const h = cuentaDeUrl($("#fUrl").value);
+  if(h && !$("#fCuenta").value) $("#fCuenta").value = h;
+});
+
+$("#btnAlta").addEventListener("click", async ()=>{
+  const msg = $("#msgAlta");
+  const url = $("#fUrl").value.trim();
+  const com = $("#fCom").value.trim();
+  const cuenta = $("#fCuenta").value.trim().replace(/^@/,"") || cuentaDeUrl(url);
+  if(!url){ msg.textContent = "Falta el link del reel."; return; }
+  if(!cuenta){ msg.textContent = "Poné de qué cuenta es: el link de un reel no lo dice."; return; }
   if(!S.db){ msg.textContent = "Sin conexión al guardado."; return; }
-  let arr;
+  $("#btnAlta").disabled = true; msg.textContent = "Guardando…";
   try{
-    arr = JSON.parse(txt);
-    if(!Array.isArray(arr)) arr = arr.posts || arr.data || arr.items;
-    if(!Array.isArray(arr)) throw new Error("no es un array");
-  }catch(e){ msg.textContent = "No pude leer el JSON: " + e.message; return; }
-
-  $("#btnJson").disabled = true;
-  let ok = 0, fallo = 0;
-  for(const r of arr){
-    const handle = String(r.handle || r.username || "").replace(/^@/,"").trim();
-    if(!handle){ fallo++; continue; }
-    const fecha = String(r.fecha || r.timestamp || "").slice(0,10);
-    try{
-      await S.db.doc("posts/"+idCorto()).set({
-        handle, url:String(r.url || r.permalink || ""), fecha, semana:semanaDe(fecha),
-        comentarios:Number(r.comentarios ?? r.comments_count) || 0,
-        likes:Number(r.likes ?? r.like_count) || 0,
-        vistas:Number(r.vistas ?? r.views ?? r.play_count) || 0,
-        tema:String(r.tema || ""), formato:String(r.formato || ""),
-        hook:String(r.hook || ""), transcripcion:String(r.transcripcion || ""),
-        caption:String(r.caption || ""), origen:"recolector", cargado:new Date().toISOString()
-      });
-      ok++;
-    }catch(e){ fallo++; }
-  }
-  msg.textContent = "Importadas " + ok + " piezas" + (fallo ? ", " + fallo + " sin cargar (faltaba la cuenta o no hubo permiso)." : ".");
-  if(ok) $("#jsonIn").value = "";
-  $("#btnJson").disabled = false;
-}
-
-/* ===================== pestañas ===================== */
-const TABS = ["tablero","guiones","voz","cuentas","cargar"];
-function irA(t){
-  TABS.forEach(x=>{
-    $("#t-"+x).setAttribute("aria-selected", String(x===t));
-    $("#p-"+x).hidden = (x!==t);
-  });
-  if(t==="voz") pintarVoz();
-  if(t==="cargar") pintarFormPieza();
-  if(t==="cuentas") pintarCuentas();
-  if(t==="guiones") pintarGuiones();
-}
-TABS.forEach(t=>$("#t-"+t).addEventListener("click", ()=>irA(t)));
-
-$("#selSemana").addEventListener("change", e=>{
-  S.semana = e.target.value; pintarTablero(); pintarSelPost();
-});
-$("#selPost").addEventListener("change", e=>{
-  S.postSel = e.target.value; pintarGuiones();
-});
-$("#btnPieza").addEventListener("click", guardarPieza);
-$("#btnJson").addEventListener("click", importarJson);
-$("#btnAddCuenta").addEventListener("click", async ()=>{
-  const h = $("#nuevoHandle").value.trim().replace(/^@/,"");
-  const n = $("#nuevoNombre").value.trim();
-  if(!h || !S.db) return;
-  const id = h.replace(/[^A-Za-z0-9_.~:@+-]/g,"_");
-  try{
-    await S.db.doc("creadores/"+id).set({handle:h, nombre:n, activo:true, agregado:new Date().toISOString()});
-    $("#nuevoHandle").value=""; $("#nuevoNombre").value="";
-  }catch(e){ /* sin permiso: la lista no cambia */ }
+    await S.db.doc("posts/"+idCorto()).set({
+      handle:cuenta, url, comentarios:Number(com)||0,
+      semana:isoSemana(new Date()), fecha:"", likes:0, vistas:0,
+      tema:"", hook:"", transcripcion:"", caption:"",
+      origen:"manual", cargado:new Date().toISOString()
+    });
+    msg.textContent = "Agregado. Pedime el guión en el chat.";
+    $("#fUrl").value = ""; $("#fCom").value = ""; $("#fCuenta").value = "";
+  }catch(e){
+    msg.textContent = (e.code === "invalid_argument")
+      ? "No tenés permiso de escritura en este tablero." : "No se pudo guardar. Reintentá.";
+  }finally{ $("#btnAlta").disabled = false; }
 });
 
-/* reglas anti-clon en la pestaña de voz */
-(function(){
-  const ol = $("#listaReglas");
-  REGLAS.forEach(r=>{ const li=document.createElement("li");
-    const s=document.createElement("span"); s.textContent=r; li.append(s); ol.append(li); });
-})();
+$("#selSemana").addEventListener("change", e=>{ S.semana = e.target.value; pintar(); });
 
-function repintar(){
-  pintarSelSemana();
-  pintarTablero();
-  if(!$("#p-guiones").hidden) pintarGuiones();
-  if(!$("#p-cuentas").hidden) pintarCuentas();
-  if(!$("#p-voz").hidden) pintarVoz();
-}
+/* primer frame */
+pintar();
 
-/* primer frame sin datos */
-pintarTablero();
-
-/* ===================== conexión al guardado ===================== */
 (async ()=>{
   const db = await claude.use("db");
-  if(!db){
-    S.cargando = false; repintar();
-    return;
-  }
+  if(!db){ S.cargando = false; pintar(); return; }
   S.db = db;
-  const user = await claude.use("user");
-  S.puedeEscribir = user ? await user.can("data.write") : null;
-
-  db.collection("posts").onSnapshot(snap=>{
-    S.posts = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    S.cargando = false; repintar();
-  }, e=>{ S.cargando=false; console.warn("posts", e.code); repintar(); });
-
-  db.collection("creadores").onSnapshot(snap=>{
-    S.creadores = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    if(!$("#p-cuentas").hidden) pintarCuentas();
-  }, e=>console.warn("creadores", e.code));
-
-  db.collection("guiones").onSnapshot(snap=>{
-    S.guiones = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  }, e=>console.warn("guiones", e.code));
-
-  db.doc("config/voz").onSnapshot(snap=>{
-    if(snap.exists) S.voz = snap.data() || {};
-    if(!$("#p-voz").hidden) pintarVoz();
-  }, e=>console.warn("voz", e.code));
+  db.collection("posts").onSnapshot(s=>{
+    S.posts = s.docs.map(d=>({id:d.id, ...d.data()}));
+    S.cargando = false; pintar();
+  }, e=>{ S.cargando = false; pintar(); });
+  db.collection("guiones").onSnapshot(s=>{
+    S.guiones = s.docs.map(d=>({id:d.id, ...d.data()}));
+    pintar();
+  });
 })();
 
-/* ===================== reescritura disponible? ===================== */
-(async ()=>{
-  S.sample = await claude.use("sample");
-  if(!$("#p-guiones").hidden) pintarGuiones();
-})();
+(async ()=>{ S.sample = await claude.use("sample"); pintar(); })();
 </script>
