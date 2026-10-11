@@ -506,3 +506,113 @@ test.describe('the light surface applies to the whole document', () => {
     expect(luminance([parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0])).toBeLessThan(0.1);
   });
 });
+
+/**
+ * The scroll narrative is paced, and it settles.
+ *
+ * It shipped at a flat 220vh: on a 1440×900 window that is 1080px of scroll
+ * driving 4320px of horizontal travel, a ratio of **4:1**. One notch of a wheel
+ * moved the rail a third of a panel, the four panels were spent in a little over
+ * one screen, and the frame you actually saw was two half-panels clipped by both
+ * edges — never the composition. The panels were never broken; settling on one
+ * was impossible.
+ *
+ * So the ratio is asserted rather than the height, because the height is a
+ * consequence and the ratio is the thing a reader feels. The snap is asserted
+ * through a real wheel gesture, since that is the only input that engages
+ * `proximity` — a programmatic jump does not, which is worth knowing before
+ * someone "fixes" a passing test that only moves `window.scrollY`.
+ */
+test.describe('the home rail is paced for reading', () => {
+  test('travels no more than twice its scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const geometry = await page.evaluate(() => {
+      const rail = document.querySelector('.rail');
+      const stage = document.querySelector('.rail-stage');
+      const panels = document.querySelectorAll('.rail-panel');
+      if (!rail || !stage || panels.length === 0) return null;
+      return {
+        scroll: rail.getBoundingClientRect().height - stage.getBoundingClientRect().height,
+        travel: (panels.length - 1) * window.innerWidth,
+        pinned: (stage as HTMLElement).dataset.pinned,
+      };
+    });
+
+    expect(geometry, 'the rail is missing from the home page').not.toBeNull();
+    test.skip(geometry!.pinned !== 'true', 'not the pinned form at this width');
+
+    const ratio = geometry!.travel / geometry!.scroll;
+    expect(ratio, `${ratio.toFixed(2)} px of travel per px of scroll`).toBeLessThanOrEqual(2);
+    // And not so slow that the section becomes a tunnel.
+    expect(ratio).toBeGreaterThan(1);
+  });
+
+  test('comes to rest on a panel, and lets go at the end', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const state = await page.evaluate(() => {
+      const stage = document.querySelector('.rail-stage') as HTMLElement | null;
+      return {
+        pinned: stage?.dataset.pinned === 'true',
+        stops: [...document.querySelectorAll('.rail-stop')].map((stop) =>
+          Math.round(stop.getBoundingClientRect().top + window.scrollY),
+        ),
+      };
+    });
+    // A touch context has no pinned form, so it has no stops to land on — the
+    // track is a snap carousel on its own axis instead.
+    test.skip(!state.pinned, 'not the pinned form in this context');
+    const stops = state.stops;
+
+    await page.evaluate((y) => window.scrollTo(0, y), stops[0]!);
+    await page.waitForTimeout(500);
+
+    const landings: number[] = [];
+    for (let notch = 0; notch < 8; notch++) {
+      await page.mouse.wheel(0, 300);
+      await page.waitForTimeout(450);
+      landings.push(await page.evaluate(() => Math.round(window.scrollY)));
+    }
+
+    // Somewhere in a run of ordinary notches the page is parked exactly on a
+    // panel — that is the whole point of the stops.
+    const onAStop = landings.filter((y) => stops.some((stop) => Math.abs(stop - y) <= 2));
+    expect(onAStop.length, `landed at ${landings.join(', ')}; stops at ${stops.join(', ')}`)
+      .toBeGreaterThanOrEqual(2);
+
+    // And the last notches are past the final stop and still moving: a snap that
+    // held you inside the section would be worse than no snap at all.
+    const last = landings.at(-1)!;
+    expect(last).toBeGreaterThan(stops.at(-1)!);
+  });
+
+  test('is not a pinned tunnel when motion is reduced', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const measured = await page.evaluate(() => {
+      const rail = document.querySelector('.rail');
+      const stage = document.querySelector('.rail-stage');
+      if (!rail || !stage) return null;
+      return {
+        railHeight: rail.getBoundingClientRect().height,
+        position: getComputedStyle(stage).position,
+        overflowX: getComputedStyle(stage).overflowX,
+      };
+    });
+
+    expect(measured).not.toBeNull();
+    // Nothing moves, so a tall section would be scroll that buys the reader
+    // nothing. It is a plain horizontal scroller instead.
+    expect(measured!.position).not.toBe('sticky');
+    expect(measured!.overflowX).toBe('auto');
+    expect(measured!.railHeight).toBeLessThan(900 * 2);
+  });
+});

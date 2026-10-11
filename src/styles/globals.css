@@ -582,9 +582,66 @@
     min-width: 0;
   }
 
-  @media (min-width: 64rem) and (pointer: fine) {
+  /* Only the pinned form has snap stops; the carousel snaps on its own axis. */
+  .rail-stop {
+    display: none;
+  }
+
+  /**
+   * The pinned form. Three conditions, all of them load-bearing: a wide window,
+   * a real pointer, and no request for reduced motion — the last one because the
+   * pin is what the transform drives, and without the transform a tall section
+   * is just dead scroll. It used to be absent here, so a visitor on reduced
+   * motion got a 220vh section showing one panel and 120vh of nothing.
+   */
+  @media (min-width: 64rem) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    /**
+     * How far the page scrolls to move the rail by one panel — and therefore
+     * the whole pacing of the narrative.
+     *
+     * It was 220vh for the entire section: 1080px of scroll driving 4320px of
+     * travel on a 1440×900 window, a ratio of **4:1**. One notch of a wheel
+     * moved the rail a third of a panel and the four panels were spent in a
+     * little over one screen, so the thing you actually saw was two half-panels
+     * clipped by both edges — never the composition. Measured, not guessed:
+     * a settled panel was clean, and settling was the part that could not
+     * happen.
+     *
+     * Expressed in `vw` on purpose. The distance being paced is horizontal
+     * (one panel = 100vw), so pacing it against a vertical unit would make the
+     * ratio drift with the window's aspect. At 54vw the ratio is ~1.85:1 on any
+     * shape of window. The `svh` cap stops a short, wide window from demanding
+     * several screens of scroll per panel.
+     */
     .rail {
-      height: 220vh;
+      --rail-step: min(54vw, 90svh);
+      /* One viewport for the stage, plus one step per transition. */
+      height: calc(100svh + var(--rail-steps, 3) * var(--rail-step));
+    }
+
+    /**
+     * Snap stops: one per panel, at the scroll offset where that panel is
+     * centred. `proximity`, never `mandatory` — mandatory would seize a flick
+     * that was only passing through, which is the line the brief draws and the
+     * reason this section is a real-height sticky in the first place.
+     *
+     * The negative `scroll-margin-top` cancels the root's `scroll-padding-top`
+     * (the fixed header strip). Without it every stop would land a header's
+     * height early and no panel would ever be quite centred.
+     */
+    html {
+      scroll-snap-type: y proximity;
+    }
+
+    .rail-stop {
+      display: block;
+      position: absolute;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      top: calc(var(--i) * var(--rail-step));
+      scroll-snap-align: start;
+      scroll-margin-top: calc(-1 * (var(--header-h) + 1rem));
     }
 
     .rail-stage {

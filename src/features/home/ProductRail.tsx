@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import { formatARS } from '@/lib/money';
 import { ButtonLink } from '@/components/ui/Button';
@@ -18,11 +18,18 @@ import type { RenderKind, Spec } from '@/types/catalog';
  * product.
  *
  * The rules it obeys (docs/motion-system.md):
- *  - the container has a **real 220 vh height** and the stage is `sticky`, so the
+ *  - the container has a **real height** and the stage is `sticky`, so the
  *    scroll is never taken: a flick passes straight through;
  *  - progress is a pure 0→1 value, so the whole thing is reversible and
  *    interruptible by construction;
- *  - ≤ 250 vh, and this is the only pinned section on the page;
+ *  - that height is one viewport plus one scroll step per transition, where a
+ *    step is 54vw — about 1.85 px of travel per px of scroll. It was a flat
+ *    220vh, which on a 1440×900 window is **4:1**: a wheel notch moved the rail
+ *    a third of a panel, the four panels were spent in one screen, and what you
+ *    saw was two half-panels clipped by both edges. The panels were never the
+ *    problem; settling on one was;
+ *  - snap stops at each panel, `proximity` so a flick still passes through;
+ *  - this is the only pinned section on the page;
  *  - **on touch it is not pinned at all.** It becomes a real `overflow-x` snap
  *    carousel, because driving horizontal travel from a vertical touch scroll is
  *    hostile. Which layout applies is decided by a **media query**, not by React
@@ -79,10 +86,35 @@ export function ProductRail({ panels }: { panels: RailPanel[] }) {
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
 
   return (
-    <section ref={ref} aria-labelledby="rail-heading" className="rail relative">
+    <section
+      ref={ref}
+      aria-labelledby="rail-heading"
+      className="rail relative"
+      // The section's height is one viewport plus one scroll step per
+      // transition, and only CSS knows how long a step is. Handing it the
+      // count keeps the geometry in the stylesheet, where the layout for the
+      // other two forms already lives.
+      style={{ '--rail-steps': Math.max(panels.length - 1, 1) } as CSSProperties}
+    >
       <h2 id="rail-heading" className="sr-only">
         Recorrido de producto
       </h2>
+
+      {/*
+        One snap stop per panel, at the scroll offset where that panel is
+        centred, so the page settles on a composition instead of between two.
+        They are 1px markers rather than anything visible: `scroll-snap-align`
+        has to sit on an element at the right position in the scrollport, and
+        the panels themselves are inside a sticky stage that never moves.
+      */}
+      {panels.map((panel, index) => (
+        <div
+          key={`stop-${panel.id}`}
+          aria-hidden="true"
+          className="rail-stop"
+          style={{ '--i': index } as CSSProperties}
+        />
+      ))}
 
       <div className="rail-stage" data-pinned={pinned}>
         <motion.ol
