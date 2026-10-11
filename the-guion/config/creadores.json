@@ -1,0 +1,14 @@
+[
+  {
+    "handle": "nico.donovann",
+    "nombre": "Nico Donovan",
+    "activo": true,
+    "notas": "Referente que sigue Santiago. Handle sin verificar: si el recolector devuelve 'handle inexistente', probar nicodonovan.ads."
+  },
+  {
+    "handle": "bruno.dbenedetto",
+    "nombre": "Bruno - Mkt Digital",
+    "activo": true,
+    "notas": "Publica en espanol rioplatense: Andromeda, bots en campanas, cuentas publicitarias inhabilitadas."
+  }
+]
